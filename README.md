@@ -4,6 +4,13 @@ Collection of personal scripts to process output from [MetAnnotate (DoxeyLab too
 ## 1. metannotate_barplots.R
 Script to generate bar charts of major taxa in a given sample with a given functional gene.
 **This is an early version of this script (alpha) -- don't trust this yet for real analyses without contacting me about usage. I'd appreciate any feedback on potential issues or feature requests.**
+
+### Dependencies (R packages)
+* [`plyr`](https://cran.r-project.org/web/packages/plyr/index.html)
+* [`dplyr`](http://dplyr.tidyverse.org)
+* [`ggplot2`](http://ggplot2.tidyverse.org)
+* Can be installed by running: `install.packages(c("plyr", "dplyr", "ggplot2"), dependencies = TRUE)`
+
 ### Usage
 This script must be run in several steps from within a console (e.g., RStudio), modifying paramters in the "User variables" section in the first few lines of the code. The input is the "annotations" TSV file provided as output from MetAnnotate. This file can contain data for multiple HMMs and samples; the script will plot all (or a subset, if you desire) in the same figure.
 1. After selecting your working directory and MetAnnotate summary table, run ```script_setup <- TRUE```. This will print out two tables to fill in information about your samples and HMMs needed for further processing.
