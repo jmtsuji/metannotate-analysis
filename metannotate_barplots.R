@@ -5,8 +5,8 @@
 
 #######################################
 ##### User variables ##################
-setwd("/Users/JTsuji/Documents/Research_General/PhD/04e_Biogeography/05_JGI_metagenome_analysis/02_prelim_scans/")
-input_filename <- "11801_8_220187_CGTACTA_CTAAGCC_filter_METAGENOME_frag_0_all_annotations_bLx8GY742162434.tsv"
+setwd("/Users/")
+input_filename <- "frag_0_all_annotations_bLx8GY742162434.tsv"
 script_setup <- FALSE # Prints off raw HMM and sample names in template for setting up sample data files, then exits early.
 #                   MUST run this the first time you use this script on a given dataset
 
