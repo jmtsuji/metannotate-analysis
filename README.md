@@ -24,10 +24,10 @@ This script must be run in several steps from within a console (e.g., RStudio), 
 
 4. Making (nearly) publication-ready custom plots
 Once you have found a set of "basic" plotting settings that you are satisfied with, you can overlay more custom user information to make the plot more meaningful and visually appealing. This must be done in a series of steps:
-   i. Set ```print_custom_plot_template <- TRUE```. This will cause the script to print off a template file with the current "basic" plot settings for the user to fill out.
-   ii. Fill out the template file. Sort the taxa (i.e., rows) in the order that you want them to appear in the plot. It helps to group taxa with similar (potential) functional roles together, for example. Also, specify the colour that you want each taxon to be plotted with. You could potentially group taxa by potential function (or phylogenetic similarity) and put into groups of related colours, for example. As a related example, see [this paper, Figure 3](http://doi.org/10.1038/srep46708).
-   iii. Once done, specify the completed template file as ```custom_plot_template_filename``` and set ```print_custom_plot_template <- FALSE``` again. Now, set ```print_custom_plot <- TRUE``` to generate your custom plot.
-   iv. You'll probably still need to tweak this plot a bit after it is produced (e.g., using a PDF editor like [Inkscape](https://inkscape.org/en/). Note that you can also dig into the script and change the plot dimensions and so on, if you'd like.
+   1. Set ```print_custom_plot_template <- TRUE```. This will cause the script to print off a template file with the current "basic" plot settings for the user to fill out.
+   2. Fill out the template file. Sort the taxa (i.e., rows) in the order that you want them to appear in the plot. It helps to group taxa with similar (potential) functional roles together, for example. Also, specify the colour that you want each taxon to be plotted with. You could potentially group taxa by potential function (or phylogenetic similarity) and put into groups of related colours, for example. As a related example, see [this paper, Figure 3](http://doi.org/10.1038/srep46708).
+   3. Once done, specify the completed template file as ```custom_plot_template_filename``` and set ```print_custom_plot_template <- FALSE``` again. Now, set ```print_custom_plot <- TRUE``` to generate your custom plot.
+   4. You'll probably still need to tweak this plot a bit after it is produced (e.g., using a PDF editor like [Inkscape](https://inkscape.org/en/). Note that you can also dig into the script and change the plot dimensions and so on, if you'd like.
 
 ### How to interpret the plot (and some nitty gritty details)
 Two normalization steps are performed during the production of the plot:
