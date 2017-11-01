@@ -1,0 +1,3 @@
+"Dataset"	"HMM.Family"	"Closest.Homolog.Family"	"normalized_count_to_rpoB"	"Closest.Homolog.Order"	"Closest.Homolog.Class"	"Closest.Homolog.Phylum"	"Closest.Homolog.Superkingdom"
+"Test data"	"rpoB"	"Listeriaceae"	0.966442953020134	"Bacillales"	"Bacilli"	"Firmicutes"	"Bacteria"
+"Test data"	"rpoB"	"unclassified"	0.0335570469798658	"unclassified"	"unclassified"	"unclassified"	"unclassified"
