@@ -15,7 +15,7 @@ library(ggplot2)
 setwd("/Users")
 write_tables <- TRUE # Print off summary tables?
 printPDF <- TRUE # Print PDF plots to the folder?
-output_name_general <- "171011_barplot" # general name of output files to append to
+output_name_general <- "171101_barplot" # general name of output files to append to
 
 ### Inputs
 input_filename <- "rpoB_0_MetagenomeTest_0_annotations_5z4KAl762541689.tsv"
@@ -40,7 +40,7 @@ top_number_to_plot <- 0.01  # If < 1, then plot all taxa with at least this rela
 ### Advanced features for making custom plots
 
 # ** NOTE: the basic plot settings (above) MUST match those from when the template file was created!
-print_custom_plot_template <- FALSE # Prints a template for the user to generate a plot with their own colours, then EXITS
+print_custom_plot_template <- TRUE # Prints a template for the user to generate a plot with their own colours
 print_custom_plot <- TRUE          # ONLY works if you have already run print_custom_plot_template and filled in the table
 
 # Required for custom_plot_template_filename
@@ -360,7 +360,6 @@ if (print_custom_plot_template == TRUE) {
   plotting_template_table_filename <- paste(output_name_general, "_05_custom_plot_template_", tax_rank_to_plot, "_", top_number_to_plot, ".tsv", sep = "")
   write.table(barplot_template, file = plotting_template_table_filename, sep = "\t", row.names = F, col.names = T)
   
-  stop(paste("Wrote plotting template table to ", plotting_template_table_filename, ".\nPlease fill out desired plotting colours AND put taxa (rows) in the order in which you want them to appear on the plot.\nThen, use this as input for the custom_plot_template variable and set print_custom_plot to TRUE.\nExiting...", sep = ""))
 }
 
 
