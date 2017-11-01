@@ -12,13 +12,15 @@ library(ggplot2)
 ##### User variables ##################
 
 ### Global variables
-setwd("/Users")
+setwd("/Users/JTsuji/Documents/Research_General/PhD/04b_Metagenome_resequencing_F2015/07_overall_pipeline/03b_ORF_prediction/03_pear/test/")
+# setwd("/Users")
 write_tables <- TRUE # Print off summary tables?
 printPDF <- TRUE # Print PDF plots to the folder?
-output_name_general <- "171011_barplot" # general name of output files to append to
+output_name_general <- "171101_barplot" # general name of output files to append to
 
 ### Inputs
-input_filename <- "rpoB_0_MetagenomeTest_0_annotations_5z4KAl762541689.tsv"
+input_filename <- "all_annotations_6mpp33214111848.tsv"
+# input_filename <- "rpoB_0_MetagenomeTest_0_annotations_5z4KAl762541689.tsv"
 
 script_setup <- FALSE # Prints off raw HMM and sample names in template for setting up sample data files, then exits early.
                       # MUST run this the first time you use this script on a given dataset
@@ -31,17 +33,20 @@ dataset_info_filename <- "dataset_info_template_FILLED.tsv"  # Includes sample r
 hmm_info_filename <- "hmm_info_template_FILLED.tsv" # Includes HMM raw names, corrected names for plotting, and HMM lengths
 
 ### Basic plot settings
-HMMs_to_plot <- c("rpoB")
+HMMs_to_plot <- c("dsrA", "cyc2-PV1", "pmoA")
 normalizing_HMM <- "rpoB"
 tax_rank_to_plot <- "Family"
 top_number_to_plot <- 0.01  # If < 1, then plot all taxa with at least this relative abundance in the community.
                             # If > 1 (e.g., 10), then plot the top ___ (e.g., 10) taxa for each gene
+percent_sort_method <- "by_dataset" # If top_number_to_plot is < 1, you need to provide guidance for which type of percentage-based sorting to use. Options are either:
+                                            # If "by_dataset", gives the taxa above x% relative to the normalizing_HMM for each dataset.
+                                            # If "by_HMM", gives the taxa above x% abundance relative to the total hits for each specific HMM.
 
 ### Advanced features for making custom plots
 
 # ** NOTE: the basic plot settings (above) MUST match those from when the template file was created!
-print_custom_plot_template <- FALSE # Prints a template for the user to generate a plot with their own colours, then EXITS
-print_custom_plot <- TRUE          # ONLY works if you have already run print_custom_plot_template and filled in the table
+print_custom_plot_template <- TRUE # Prints a template for the user to generate a plot with their own colours
+print_custom_plot <- FALSE          # ONLY works if you have already run print_custom_plot_template and filled in the table
 
 # Required for custom_plot_template_filename
 custom_plot_template_filename <- "171011_barplot_05_custom_plot_template_Family_0.01_FILLED.tsv" 
@@ -163,6 +168,9 @@ collapse_table <- function(table, tax_rank) {
   # From http://stackoverflow.com/a/9945116, accessed 170312
   collapsed <- as.data.frame(dplyr::left_join(collapsed, ranks, by = colnames(table)[tax_rank_col_num]))
   
+  # Sort by rpoB count for ease of reading
+  collapsed <- dplyr::arrange(collapsed, Dataset, HMM.Family, desc(normalized_count_to_rpoB))
+  
   return(collapsed)
 } 
 
@@ -173,80 +181,45 @@ subset_collapsed_table <- function(collapsed_table, top_num) {
   # top_num <- 10
   
   # Determine sort method based on top_num provided
-  if (top_num < 1) {
-    sort_method <- "top_perc"
-  } else if (top_num >= 1) {
+  if (top_num >= 1) {
     sort_method <- "top_num"
+    sort_method <- "top_perc_normalized"
+    top_num < 1
+  } else if (top_num < 1 && percent_sort_method == "by_dataset") {
+    sort_method <- "top_perc_by_dataset"
+  } else if (top_num < 1 && percent_sort_method == "by_HMM") {
+    sort_method <- "top_perc_by_HMM"
   } else {
-    stop("ERROR: top_number_to_plot was somehow out of bounds. Must be greater than 0.")
+    stop("ERROR: top_number_to_plot or percent_sort_method was somehow out of bounds. top_number_to_plot must be greater than 0. If <1, percent_sort_method must be 'by_dataset' or 'by_HMM'.")
   }
   
-  # Split into individual list elements by sample/hmm to be able to sort effectively
-  hits_by_sample <- split(collapsed_table, collapsed_table$Dataset)
-  hits_by_hmm <- lapply(unique(collapsed_table$Dataset), function(dataset_name) { split(hits_by_sample[[dataset_name]], hits_by_sample[[dataset_name]]$HMM.Family) } )
-  names(hits_by_hmm) <- unique(collapsed_table$Dataset)
-  
-  # Combine two functions together (nested) to sort within the nested loop
-  # 1: main function; sorts for each individual data frame within the list
-  sort_top_num1 <- function(hmm_name, dataset_table) {
-    # test vars
-    # dataset_table <- hits_by_hmm[[1]]
-    # hmm_name <- "dsrA"
+  if (sort_method == "top_num") {
+    # Pick out the most abundant taxa
+    collapsed_table_grouped <- dplyr::group_by(collapsed_table, HMM.Family, Dataset)
+    collapsed_table_top_values <- dplyr::top_n(collapsed_table_grouped, top_num, wt = normalized_count_to_rpoB)
+  } else if (sort_method == "top_perc_by_dataset") {
+    # Subset all taxa above the desired percent abundance threshold (relative to rpoB)
+    collapsed_table_top_values <- dplyr::filter(collapsed_table, normalized_count_to_rpoB >= top_num)
+  } else if (sort_method == "top_perc_by_HMM") {
+    # First, get the total sum of HMM hits for each metagenome dataset, per HMM
+    collapsed_table_grouped <- dplyr::group_by(collapsed_table, HMM.Family, Dataset)
+    collapsed_table_summed_counts <- dplyr::summarise(collapsed_table_grouped, normalized_count_total = sum(normalized_count_to_rpoB))
     
-    hmm_table <- dataset_table[[hmm_name]]
+    # Join this to the main data frame
+    collapsed_table_joined <- dplyr::left_join(collapsed_table, collapsed_table_summed_counts, by = c("Dataset", "HMM.Family"))
     
-    # Sort from most to least abundant
-    hmm_table <- hmm_table[order(hmm_table$normalized_count_to_rpoB, decreasing = T),]
+    # Use this to determine the relative abundance of each hit within the sample
+    collapsed_table_joined$per_sample_rel_abund <- collapsed_table_joined$normalized_count_to_rpoB / collapsed_table_joined$normalized_count_total
     
-    if (sort_method == "top_num") {
-      if (nrow(hmm_table) < top_num) {
-        # If there are fewer entries than desired top #, just return the table as is
-        hmm_table <- hmm_table
-      } else {
-        # Take top portion, because table is already sorted
-        hmm_table <- hmm_table[1:top_num,]
-      }
-      
-    } else if (sort_method == "top_perc") {
-      
-      hmm_table <- dplyr::filter(hmm_table, normalized_count_to_rpoB >= top_num)
-      
-    } else if (sort_method == "top_perc_alt") {
-      # Make additional normalized count within sample. Can then sort based on rel. abund within sample...
-      temp_sum <- sum(hmm_table$normalized_count_to_rpoB)
-      hmm_table$normalized_count_within_sample_TEMP <- hmm_table$normalized_count_to_rpoB / temp_sum
-      
-      hmm_table <- dplyr::filter(hmm_table, normalized_count_within_sample_TEMP >= top_num)
-      
-      # Remove temp column
-      hmm_table$normalized_count_within_sample_TEMP <- NULL
-      
-    } else {
-      stop("Invalid sort method. Should be 'top_num' or 'top_perc'. Exiting...")
-    }
+    # Sort by within-sample relative abundance
+    collapsed_table_top_values <- dplyr::filter(collapsed_table_joined, per_sample_rel_abund >= top_num)
     
-    return(hmm_table)
+    # Delete temporary columns and temporary table
+    collapsed_table_top_values[,c("normalized_count_total", "per_sample_rel_abund")] <- NULL
+    collapsed_table_joined <- NULL
   }
   
-  # 2: helper function; guides function 1 to each list
-  sort_top_num2 <- function(dataset_name) {
-    dataset_table <- hits_by_hmm[[dataset_name]]
-    dataset_table_sort <- lapply(names(dataset_table), sort_top_num1, dataset_table = dataset_table)
-    # For working with a multi-parameter function in lapply, see https://stackoverflow.com/a/6827519 (accessed 170606)
-    return(dataset_table_sort)
-  }
-  # Run helper function 2 using lapply (and function 2 calls function 1...)
-  sorted <- lapply(names(hits_by_hmm), sort_top_num2)
-  names(sorted) <- names(hits_by_hmm)
-  
-  # Put the separate data frames back together
-  merge_df <- function(dataset_name) {
-    merged_dataset <- dplyr::bind_rows(sorted[[dataset_name]])
-    return(merged_dataset)
-  }
-  sorted_final <- dplyr::bind_rows(lapply(names(sorted), merge_df))
-  
-  return(sorted_final)
+  return(collapsed_table_top_values)
 }
 
 
@@ -345,7 +318,7 @@ if (printPDF == TRUE) {
   
   # Scale plot dimensions relative to input data size
   # Width: consider the number of datasets (x axis) and the longest legend entry
-  auto_barplot_width <- length(unique(hits_collapsed_subset$Dataset)) * 30 + max(nchar(unique(hits_collapsed_subset[,3]))) * 3
+  auto_barplot_width <- length(unique(hits_collapsed_subset$Dataset)) * 15 + max(nchar(unique(hits_collapsed_subset[,3]))) * 3
   # Height: consider the number of HMMs (y panels) and the longest dataset name (x axis label)
   auto_barplot_height <- length(unique(hits_collapsed_subset$HMM.Family)) * 40 + max(nchar(unique(hits_collapsed_subset$Dataset))) * 2
   
@@ -360,7 +333,6 @@ if (print_custom_plot_template == TRUE) {
   plotting_template_table_filename <- paste(output_name_general, "_05_custom_plot_template_", tax_rank_to_plot, "_", top_number_to_plot, ".tsv", sep = "")
   write.table(barplot_template, file = plotting_template_table_filename, sep = "\t", row.names = F, col.names = T)
   
-  stop(paste("Wrote plotting template table to ", plotting_template_table_filename, ".\nPlease fill out desired plotting colours AND put taxa (rows) in the order in which you want them to appear on the plot.\nThen, use this as input for the custom_plot_template variable and set print_custom_plot to TRUE.\nExiting...", sep = ""))
 }
 
 
@@ -447,7 +419,7 @@ if (print_custom_plot == TRUE) {
     
     # Scale plot dimensions relative to input data size
     # Width: consider the number of datasets (x axis) and the longest legend entry
-    custom_barplot_width <- length(unique(hits_collapsed_subset$Dataset)) * 30 + max(nchar(unique(hits_collapsed_subset[,3]))) * 3
+    custom_barplot_width <- length(unique(hits_collapsed_subset$Dataset)) * 15 + max(nchar(unique(hits_collapsed_subset[,3]))) * 3
     # Height: consider the number of HMMs (y panels) and the longest dataset name (x axis label)
     custom_barplot_height <- length(unique(hits_collapsed_subset$HMM.Family)) * 40 + max(nchar(unique(hits_collapsed_subset$Dataset))) * 2
     
