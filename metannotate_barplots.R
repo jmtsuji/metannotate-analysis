@@ -13,7 +13,7 @@ script_setup <- FALSE # Prints off raw HMM and sample names in template for sett
                       # MUST run this the first time you use this script on a given dataset
 
 ### Required supplemental data (user needs to modify the template printed in script_setup)
-dataset_info_filename <- "sample_info_template_FILLED.tsv"  # Includes sample raw names and corrected names for plotting
+dataset_info_filename <- "dataset_info_template_FILLED.tsv"  # Includes sample raw names and corrected names for plotting
                                                             # ***NOTE: order of datasets in this file dictates their order 
                                                             # in the final plot
 
@@ -359,7 +359,7 @@ if (print_custom_plot_template == TRUE) {
   
   # Write to file
   plotting_template_table_filename <- paste(output_name_general, "_05_custom_plot_template_", tax_rank_to_plot, "_", top_number_to_plot, ".tsv", sep = "")
-  write.table(plotting_template_table, file = plotting_template_table_filename, sep = "\t", row.names = F, col.names = T)
+  write.table(barplot_template, file = plotting_template_table_filename, sep = "\t", row.names = F, col.names = T)
   
   stop(paste("Wrote plotting template table to ", plotting_template_table_filename, ".\nPlease fill out desired plotting colours AND put taxa (rows) in the order in which you want them to appear on the plot.\nThen, use this as input for the custom_plot_template variable and set print_custom_plot to TRUE.\nExiting...", sep = ""))
 }
