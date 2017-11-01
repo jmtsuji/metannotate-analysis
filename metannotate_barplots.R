@@ -12,15 +12,13 @@ library(ggplot2)
 ##### User variables ##################
 
 ### Global variables
-setwd("/Users/JTsuji/Documents/Research_General/PhD/04b_Metagenome_resequencing_F2015/07_overall_pipeline/03b_ORF_prediction/03_pear/test/")
-# setwd("/Users")
+setwd("/Users")
 write_tables <- TRUE # Print off summary tables?
 printPDF <- TRUE # Print PDF plots to the folder?
 output_name_general <- "171101_barplot" # general name of output files to append to
 
 ### Inputs
-input_filename <- "all_annotations_6mpp33214111848.tsv"
-# input_filename <- "rpoB_0_MetagenomeTest_0_annotations_5z4KAl762541689.tsv"
+input_filename <- "rpoB_0_MetagenomeTest_0_annotations_5z4KAl762541689.tsv"
 
 script_setup <- FALSE # Prints off raw HMM and sample names in template for setting up sample data files, then exits early.
                       # MUST run this the first time you use this script on a given dataset
@@ -41,6 +39,7 @@ top_number_to_plot <- 0.01  # If < 1, then plot all taxa with at least this rela
 percent_sort_method <- "by_dataset" # If top_number_to_plot is < 1, you need to provide guidance for which type of percentage-based sorting to use. Options are either:
                                             # If "by_dataset", gives the taxa above x% relative to the normalizing_HMM for each dataset.
                                             # If "by_HMM", gives the taxa above x% abundance relative to the total hits for each specific HMM.
+                                            # If you're sorting by top x taxa (i.e., top_number_to_plot > 1), then it doesn't matter what this variable is set to.
 
 ### Advanced features for making custom plots
 
