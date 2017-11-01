@@ -235,19 +235,21 @@ make_automated_barplot <- function(subsetted_table) {
   
   # Get gene totals and filter (and assign factors) similarly
   normalizing_HMM_hits_summary <- dplyr::summarise(dplyr::group_by(hits_all, Dataset, HMM.Family), normalized_count_to_rpoB = sum(normalized_count_to_rpoB))  
-  normalizing_HMM_hits_summary_subset <- dplyr::filter(normalizing_HMM_hits_summary, HMM.Family %in% HMMs_to_plot)
-  normalizing_HMM_hits_summary_subset$HMM.Family <- factor(normalizing_HMM_hits_summary_subset$HMM.Family, levels = HMMs_to_plot, ordered = TRUE)
+   
+  # Similarly assign HMM and Dataset levels
+  normalizing_HMM_hits_summary$Dataset <- factor(normalizing_HMM_hits_summary$Dataset, levels = dataset_info$Dataset, ordered = TRUE)
+  normalizing_HMM_hits_summary$HMM.Family <- factor(normalizing_HMM_hits_summary$HMM.Family, levels = HMMs_to_plot, ordered = TRUE)
   
   # Remove normalizing HMM from the gene totals, if still present; not helpful to have a grey box at 100% for that gene...
-  normalizing_HMM_hits_summary_subset <- dplyr::filter(normalizing_HMM_hits_summary, HMM.Family != normalizing_HMM)
+  normalizing_HMM_hits_summary <- dplyr::filter(normalizing_HMM_hits_summary, HMM.Family != normalizing_HMM)
   
   # Convert proportions to percents for plot
-  normalizing_HMM_hits_summary_subset$normalized_count_to_rpoB <- normalizing_HMM_hits_summary_subset$normalized_count_to_rpoB * 100
+  normalizing_HMM_hits_summary$normalized_count_to_rpoB <- normalizing_HMM_hits_summary$normalized_count_to_rpoB * 100
   subsetted_table$normalized_count_to_rpoB <- subsetted_table$normalized_count_to_rpoB * 100
   
   # Build plot
   bar_plot_overlay <- ggplot() +
-    geom_bar(data = normalizing_HMM_hits_summary_subset, aes(x = Dataset, weight = normalized_count_to_rpoB), fill = "#808080") +
+    geom_bar(data = normalizing_HMM_hits_summary, aes(x = Dataset, weight = normalized_count_to_rpoB), fill = "#808080") +
     geom_bar(data = subsetted_table, aes_string(x = "Dataset", weight = colnames(subsetted_table)[4], 
                                             fill = colnames(subsetted_table)[3]), position = "stack") +
     facet_grid(HMM.Family ~ ., scales = "free") +
@@ -357,19 +359,21 @@ make_custom_plot <- function(subsetted_table, plot_template) {
   
   # Get gene totals and filter (and assign factors) similarly
   normalizing_HMM_hits_summary <- dplyr::summarise(dplyr::group_by(hits_all, Dataset, HMM.Family), normalized_count_to_rpoB = sum(normalized_count_to_rpoB))  
-  normalizing_HMM_hits_summary_subset <- dplyr::filter(normalizing_HMM_hits_summary, HMM.Family %in% HMMs_to_plot)
-  normalizing_HMM_hits_summary_subset$HMM.Family <- factor(normalizing_HMM_hits_summary_subset$HMM.Family, levels = HMMs_to_plot, ordered = TRUE)
+  
+  # Similarly assign HMM and Dataset levels
+  normalizing_HMM_hits_summary$Dataset <- factor(normalizing_HMM_hits_summary$Dataset, levels = dataset_info$Dataset, ordered = TRUE)
+  normalizing_HMM_hits_summary$HMM.Family <- factor(normalizing_HMM_hits_summary$HMM.Family, levels = HMMs_to_plot, ordered = TRUE)
   
   # Remove normalizing HMM from the gene totals, if still present; not helpful to have a grey box at 100% for that gene...
-  normalizing_HMM_hits_summary_subset <- dplyr::filter(normalizing_HMM_hits_summary, HMM.Family != normalizing_HMM)
+  normalizing_HMM_hits_summary <- dplyr::filter(normalizing_HMM_hits_summary, HMM.Family != normalizing_HMM)
   
   # Convert proportions to percents for plot
-  normalizing_HMM_hits_summary_subset$normalized_count_to_rpoB <- normalizing_HMM_hits_summary_subset$normalized_count_to_rpoB * 100
+  normalizing_HMM_hits_summary$normalized_count_to_rpoB <- normalizing_HMM_hits_summary$normalized_count_to_rpoB * 100
   subsetted_table$normalized_count_to_rpoB <- subsetted_table$normalized_count_to_rpoB * 100
   
   # Make new plot
   custom_barplot_overlay <- ggplot() +
-    geom_bar(data = normalizing_HMM_hits_summary_subset, aes(x = Dataset, weight = normalized_count_to_rpoB), fill = "#808080") +
+    geom_bar(data = normalizing_HMM_hits_summary, aes(x = Dataset, weight = normalized_count_to_rpoB), fill = "#808080") +
     geom_bar(data = subsetted_table, aes_string(x = "Dataset", weight = colnames(subsetted_table)[4], 
                                                 fill = colnames(subsetted_table)[3]), position = "stack") +
     facet_grid(HMM.Family ~ ., scales = "free") +
