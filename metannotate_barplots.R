@@ -12,13 +12,15 @@ library(ggplot2)
 ##### User variables ##################
 
 ### Global variables
-setwd("/Users")
+setwd("/Users/JTsuji/Documents/Research_General/PhD/04b_Metagenome_resequencing_F2015/07_overall_pipeline/03b_ORF_prediction/03_pear/test/")
+# setwd("/Users")
 write_tables <- TRUE # Print off summary tables?
 printPDF <- TRUE # Print PDF plots to the folder?
 output_name_general <- "171101_barplot" # general name of output files to append to
 
 ### Inputs
-input_filename <- "rpoB_0_MetagenomeTest_0_annotations_5z4KAl762541689.tsv"
+input_filename <- "all_annotations_6mpp33214111848.tsv"
+# input_filename <- "rpoB_0_MetagenomeTest_0_annotations_5z4KAl762541689.tsv"
 
 script_setup <- FALSE # Prints off raw HMM and sample names in template for setting up sample data files, then exits early.
                       # MUST run this the first time you use this script on a given dataset
@@ -31,7 +33,7 @@ dataset_info_filename <- "dataset_info_template_FILLED.tsv"  # Includes sample r
 hmm_info_filename <- "hmm_info_template_FILLED.tsv" # Includes HMM raw names, corrected names for plotting, and HMM lengths
 
 ### Basic plot settings
-HMMs_to_plot <- c("rpoB")
+HMMs_to_plot <- c("dsrA", "cyc2-PV1", "pmoA")
 normalizing_HMM <- "rpoB"
 tax_rank_to_plot <- "Family"
 top_number_to_plot <- 0.01  # If < 1, then plot all taxa with at least this relative abundance in the community.
@@ -41,7 +43,7 @@ top_number_to_plot <- 0.01  # If < 1, then plot all taxa with at least this rela
 
 # ** NOTE: the basic plot settings (above) MUST match those from when the template file was created!
 print_custom_plot_template <- TRUE # Prints a template for the user to generate a plot with their own colours
-print_custom_plot <- TRUE          # ONLY works if you have already run print_custom_plot_template and filled in the table
+print_custom_plot <- FALSE          # ONLY works if you have already run print_custom_plot_template and filled in the table
 
 # Required for custom_plot_template_filename
 custom_plot_template_filename <- "171011_barplot_05_custom_plot_template_Family_0.01_FILLED.tsv" 
@@ -345,7 +347,7 @@ if (printPDF == TRUE) {
   
   # Scale plot dimensions relative to input data size
   # Width: consider the number of datasets (x axis) and the longest legend entry
-  auto_barplot_width <- length(unique(hits_collapsed_subset$Dataset)) * 30 + max(nchar(unique(hits_collapsed_subset[,3]))) * 3
+  auto_barplot_width <- length(unique(hits_collapsed_subset$Dataset)) * 15 + max(nchar(unique(hits_collapsed_subset[,3]))) * 3
   # Height: consider the number of HMMs (y panels) and the longest dataset name (x axis label)
   auto_barplot_height <- length(unique(hits_collapsed_subset$HMM.Family)) * 40 + max(nchar(unique(hits_collapsed_subset$Dataset))) * 2
   
@@ -446,7 +448,7 @@ if (print_custom_plot == TRUE) {
     
     # Scale plot dimensions relative to input data size
     # Width: consider the number of datasets (x axis) and the longest legend entry
-    custom_barplot_width <- length(unique(hits_collapsed_subset$Dataset)) * 30 + max(nchar(unique(hits_collapsed_subset[,3]))) * 3
+    custom_barplot_width <- length(unique(hits_collapsed_subset$Dataset)) * 15 + max(nchar(unique(hits_collapsed_subset[,3]))) * 3
     # Height: consider the number of HMMs (y panels) and the longest dataset name (x axis label)
     custom_barplot_height <- length(unique(hits_collapsed_subset$HMM.Family)) * 40 + max(nchar(unique(hits_collapsed_subset$Dataset))) * 2
     
