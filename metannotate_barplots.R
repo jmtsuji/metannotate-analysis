@@ -5,33 +5,42 @@
 
 #######################################
 ##### User variables ##################
+
 setwd("/Users/")
 input_filename <- "frag_0_all_annotations_bLx8GY742162434.tsv"
-script_setup <- FALSE # Prints off raw HMM and sample names in template for setting up sample data files, then exits early.
-#                   MUST run this the first time you use this script on a given dataset
 
-### Required supplemental data (user needs to modify the template prined in script_setup)
-dataset_info_filename <- "dataset_info_template_FILLED.tsv" # Includes sample raw names and corrected names for plotting
-#                                           ***NOTE: order of datasets in this file dictates their order in the final plot
+script_setup <- FALSE # Prints off raw HMM and sample names in template for setting up sample data files, then exits early.
+                      # MUST run this the first time you use this script on a given dataset
+
+### Required supplemental data (user needs to modify the template printed in script_setup)
+dataset_info_filename <- "dataset_info_template_FILLED.tsv"  # Includes sample raw names and corrected names for plotting
+                                                            # ***NOTE: order of datasets in this file dictates their order 
+                                                            # in the final plot
+
 hmm_info_filename <- "hmm_info_template_FILLED.tsv" # Includes HMM raw names, corrected names for plotting, and HMM lengths
 
 ### Basic plot settings
 HMMs_to_plot <- c("pmoA", "dsrA", "cyc2-PV1")
 normalizing_HMM <- "rpoB"
 tax_rank_to_plot <- "Family"
-top_number_to_plot <- 0.01 # If < 1, then plot all taxa with at least this relative abundance in the community.
-#                            If > 1 (e.g., 10), then plot the top ___ (e.g., 10) taxa for each gene
+top_number_to_plot <- 0.01  # If < 1, then plot all taxa with at least this relative abundance in the community.
+                            # If > 1 (e.g., 10), then plot the top ___ (e.g., 10) taxa for each gene
 
 ### Options for output:
 write_tables <- TRUE # Print off summary tables?
 printPDF <- TRUE
 output_name_general <- "171011_barplot" # general name of output files to append to
 
+
 ### Advanced features for making custom plots
-# **NOTE: the basic plot settings (above) MUST match those from when the template file was created!
+
+# ** NOTE: the basic plot settings (above) MUST match those from when the template file was created!
 print_custom_plot_template <- FALSE # Prints a template for the user to generate a plot with their own colours, then EXITS
-print_custom_plot <- TRUE # ONLY works if you have already run print_custom_plot_template and filled in the table
-custom_plot_template_filename <- "171011_barplot_05_custom_plot_template_Family_0.01_FILLED.tsv" # Required for custom_plot_template_filename
+print_custom_plot <- TRUE           # ONLY works if you have already run print_custom_plot_template and filled in the table
+
+# Required for custom_plot_template_filename
+custom_plot_template_filename <- "171011_barplot_05_custom_plot_template_Family_0.01_FILLED.tsv" 
+
 
 #######################################
 #######################################
@@ -41,9 +50,11 @@ library(plyr)
 library(dplyr)
 library(ggplot2)
 
+
 #############################################
 ### Part 1: read/clean the data #############
 #############################################
+
 ### Read data
 hits_all <- read.table(input_filename, sep = "\t", header = TRUE, comment.char = "", quote = "", stringsAsFactors = FALSE)
 
@@ -87,20 +98,26 @@ hmm_info_merge <- NULL
 ## Subset HMMs of interest and the HMM to normalize to, to save memory for the rest of the script
 hits_all <- dplyr::filter(hits_all, HMM.Family %in% c(HMMs_to_plot, normalizing_HMM))
 
+
 #############################################
 ### Part 2: normalize data ##################
 #############################################
+
 ### Create normalized column by HMM length (between-HMM normalization)
 hits_all$normalized_by_hmm <- (1 / hits_all$HMM_length)
 # Can now just sum this column and get the total number of a given group
-# This ONLY works for within sample comparisons. For between sample comparison, have to also normalize by rpoB (single-copy taxonomic marker) hits and show as a relative abundance
-# The current normalization acts kind of like a non-rarefied OTU table.
+# This ONLY works for within sample comparisons. For between sample comparison, 
+# have to also normalize by rpoB (single-copy taxonomic marker) hits and show as a 
+# relative abundance. The current normalization acts kind of like a non-rarefied OTU table.
+
 
 ### Also normalize by rpoB hits for relative abundance comparisons (between samples)
-# Sum rpoB (or other normalizing HMM) hit counts pre-normalized by HMM_length for each sample and map to data frame, as a divider tool
+# Sum rpoB (or other normalizing HMM) hit counts pre-normalized by HMM_length for each sample and map to 
+# data frame, as a divider tool
 normalizing_HMM_subset <- dplyr::filter(hits_all, HMM.Family == normalizing_HMM)
 normalizing_HMM_subset_grouped <- dplyr::group_by(normalizing_HMM_subset, Dataset)
-normalizing_HMM_subset_summarized <- dplyr::summarise(normalizing_HMM_subset_grouped, normalized_rpob_hits = sum(normalized_by_hmm))
+normalizing_HMM_subset_summarized <- dplyr::summarise(normalizing_HMM_subset_grouped, 
+                                                      normalized_rpob_hits = sum(normalized_by_hmm))
 normalizing_HMM_subset <- NULL
 normalizing_HMM_subset_grouped <- NULL
 
@@ -112,7 +129,7 @@ hits_all$normalized_count_to_rpoB <- hits_all$normalized_by_hmm / hits_all$norma
 
 normalizing_HMM_hits_summary <- dplyr::summarise(dplyr::group_by(hits_all, Dataset, HMM.Family), normalized_count_to_rpoB = sum(normalized_count_to_rpoB))  
 
-# # Check out the relative importance of all genes, if interested...
+# Check out the relative importance of all genes, if interested...
 if (write_tables == TRUE) {
   normalizing_HMM_hits_summary_filename <- paste(output_name_general, "_01_total_normalized_hits", ".tsv", sep = "")
   write.table(normalizing_HMM_hits_summary, file = normalizing_HMM_hits_summary_filename, sep = "\t", col.names = T, row.names = F)
@@ -143,11 +160,14 @@ collapse_table <- function(table, tax_rank) {
   
   # Add in higher taxonomic rankings data
   ranks <- hits_all[!duplicated(hits_all[,tax_rank_col_num]),tax_rank_col_num:14]
+  
   # From http://stackoverflow.com/a/9945116, accessed 170312
   collapsed <- as.data.frame(dplyr::left_join(collapsed, ranks, by = colnames(table)[tax_rank_col_num]))
   
   return(collapsed)
 } 
+
+
 subset_collapsed_table <- function(collapsed_table, top_num) {
   # test vars
   # collapsed_table <- collapse_table(hits_all, "Family")
@@ -208,6 +228,7 @@ subset_collapsed_table <- function(collapsed_table, top_num) {
     
     return(hmm_table)
   }
+  
   # 2: helper function; guides function 1 to each list
   sort_top_num2 <- function(dataset_name) {
     dataset_table <- hits_by_hmm[[dataset_name]]
@@ -228,6 +249,8 @@ subset_collapsed_table <- function(collapsed_table, top_num) {
   
   return(sorted_final)
 }
+
+
 make_automated_barplot <- function(subsetted_table) {
   # test vars
   # subsetted_table <- subset_collapsed_table(collapse_table(hits_all, "Family"), 0.01)
@@ -275,6 +298,8 @@ make_automated_barplot <- function(subsetted_table) {
   
   return(bar_plot_overlay)
 }
+
+
 make_barplot_template <- function(subsetted_table) {
   # test vars
   # subsetted_table <- subset_collapsed_table(collapse_table(hits_all, "Family"), 0.01)
@@ -305,6 +330,7 @@ if (write_tables == TRUE) {
 
 # 2. Subset the top x entries for each HMM/dataset. Write table if desired.
 hits_collapsed_subset <- subset_collapsed_table(hits_collapsed, top_number_to_plot)
+
 if (write_tables == TRUE) {
   hits_collapsed_subset_filename <- paste(output_name_general, "_03_plotting_table_", tax_rank_to_plot, "_", top_number_to_plot, ".tsv", sep = "")
   write.table(hits_collapsed_subset, file = hits_collapsed_subset_filename, sep = "\t", col.names = T, row.names = F)
@@ -312,7 +338,9 @@ if (write_tables == TRUE) {
 
 # 3. Generate an automated barplot of the subsetted table. Print if desired
 auto_barplot <- make_automated_barplot(hits_collapsed_subset)
+
 print(auto_barplot)
+
 if (printPDF == TRUE) {
   auto_barplot_filename <- paste(output_name_general, "_04_auto_barplot_", tax_rank_to_plot, "_", top_number_to_plot, ".pdf", sep = "")
   
@@ -334,7 +362,6 @@ if (print_custom_plot_template == TRUE) {
   write.table(barplot_template, file = plotting_template_table_filename, sep = "\t", row.names = F, col.names = T)
   
   stop(paste("Wrote plotting template table to ", plotting_template_table_filename, ".\nPlease fill out desired plotting colours AND put taxa (rows) in the order in which you want them to appear on the plot.\nThen, use this as input for the custom_plot_template variable and set print_custom_plot to TRUE.\nExiting...", sep = ""))
-  
 }
 
 
