@@ -7,6 +7,7 @@
 library(plyr)
 library(dplyr)
 library(ggplot2)
+library(glue)
 
 #######################################
 ##### User variables ##################
@@ -15,41 +16,44 @@ library(ggplot2)
 setwd("/Users")
 write_tables <- TRUE # Print off summary tables?
 printPDF <- TRUE # Print PDF plots to the folder?
-output_name_general <- "171101_barplot" # general name of output files to append to
+PDF_dimension_scaling <- c(1,1.2) # If you want to adjust the relative c(width, height) of the plots compared to the defaults
+                                # Default is c(1,1)
+output_name_general <- "01d_fam_1perc_cyc2/171117_barplot_01d" # general name of output files to append to
 
 ### Inputs
-input_filename <- "rpoB_0_MetagenomeTest_0_annotations_5z4KAl762541689.tsv"
+input_filename <- "00b_script_input/all_annotations.tsv"
 
 script_setup <- FALSE # Prints off raw HMM and sample names in template for setting up sample data files, then exits early.
                       # MUST run this the first time you use this script on a given dataset
 
 ### Required supplemental data (user needs to modify the template printed in script_setup)
-dataset_info_filename <- "dataset_info_template_FILLED.tsv"  # Includes sample raw names and corrected names for plotting
+dataset_info_filename <- "00b_script_input/dataset_info_template_FILLED.tsv"  # Includes sample raw names and corrected names for plotting
                                                             # ***NOTE: order of datasets in this file dictates their order 
                                                             # in the final plot
 
-hmm_info_filename <- "hmm_info_template_FILLED.tsv" # Includes HMM raw names, corrected names for plotting, and HMM lengths
+hmm_info_filename <- "00b_script_input/hmm_info_template_FILLED.tsv" # Includes HMM raw names, corrected names for plotting, and HMM lengths
 
 ### Basic plot settings
-HMMs_to_plot <- c("dsrA", "cyc2-PV1", "pmoA")
+HMMs_to_plot <- c("rpoB", "cyc2-PV1-GSB", "dsrA")
 normalizing_HMM <- "rpoB"
 tax_rank_to_plot <- "Family"
 top_number_to_plot <- 0.01  # If < 1, then plot all taxa with at least this relative abundance in the community.
                             # If > 1 (e.g., 10), then plot the top ___ (e.g., 10) taxa for each gene
-percent_sort_method <- "by_dataset" # If top_number_to_plot is < 1, you need to provide guidance for which type of percentage-based sorting to use. Options are either:
+percent_sort_method <- "by_HMM" # If top_number_to_plot is < 1, you need to provide guidance for which type of percentage-based sorting to use. Options are either:
                                             # If "by_dataset", gives the taxa above x% relative to the normalizing_HMM for each dataset.
                                             # If "by_HMM", gives the taxa above x% abundance relative to the total hits for each specific HMM.
                                             # If you're sorting by top x taxa (i.e., top_number_to_plot > 1), then it doesn't matter what this variable is set to.
 
-### Advanced features for making custom plots
 
+### Advanced feature: making custom plots with user-provided taxa order and colours
 # ** NOTE: the basic plot settings (above) MUST match those from when the template file was created!
-print_custom_plot_template <- TRUE # Prints a template for the user to generate a plot with their own colours
-print_custom_plot <- FALSE          # ONLY works if you have already run print_custom_plot_template and filled in the table
-
-# Required for custom_plot_template_filename
+print_custom_plot <- FALSE          # MUST run this script first to generate custom plot template file, then load in the template below.
 custom_plot_template_filename <- "171011_barplot_05_custom_plot_template_Family_0.01_FILLED.tsv" 
 
+
+### Advanced feature: make a subset plot of specific taxa (names within the tax_rank_to_plot rank)
+make_taxa_subset <- TRUE
+taxa_names_to_subset <- c("Chlorobiaceae")
 
 #######################################
 #######################################
@@ -59,6 +63,7 @@ custom_plot_template_filename <- "171011_barplot_05_custom_plot_template_Family_
 #############################################
 
 ### Read data
+print("Loading data file...")
 hits_all <- read.table(input_filename, sep = "\t", header = TRUE, comment.char = "", quote = "", stringsAsFactors = FALSE)
 
 ### Print raw HMM and sample names in template if desired, to help build sample info file:
@@ -105,6 +110,7 @@ hits_all <- dplyr::filter(hits_all, HMM.Family %in% c(HMMs_to_plot, normalizing_
 #############################################
 ### Part 2: normalize data ##################
 #############################################
+print("Normalizing data...")
 
 ### Create normalized column by HMM length (between-HMM normalization)
 hits_all$normalized_by_hmm <- (1 / hits_all$HMM_length)
@@ -139,10 +145,64 @@ if (write_tables == TRUE) {
 }
 
 #############################################
-### Part 3: collapse table to taxonomic rank, subset, and make auto plots ###
+### Part 3: Functions for step 4 ###
 #############################################
 
 # Functions
+make_settings_log <- function() {
+  # Relies on global variables set to create a log for the run
+  # using cat instead of print to avoid index numbers: see https://stackoverflow.com/a/19943171 (accessed 171117)
+  
+  cat("Logfile for metannnotate_barplots.R\n")
+  cat(paste("Script run on ", date(), " in directory ", getwd(), "\n", sep = ""))
+  cat("\n")
+  cat(paste("Input file: ", input_filename, "\n", sep = ""))
+  cat(paste("Dataset template file: ", dataset_info_filename, "\n", sep = ""))
+  cat(paste("HMM template file: ", hmm_info_filename, "\n", sep = ""))
+  cat(paste("General output name: ", output_name_general, "\n", sep = ""))
+  cat("\n")
+  cat(paste("Requested HMMs in plot: ", glue::collapse(HMMs_to_plot, sep = ", "), "\n", sep = ""))
+  cat(paste("Normalizing counts to HMM: ", normalizing_HMM, "\n", sep = ""))
+  cat(paste("Summarizing at rank: ", tax_rank_to_plot, "\n", sep = ""))
+  if (top_number_to_plot >= 1) {
+    cat(paste("Abundance filter: plotting top ", top_number_to_plot, " taxa", "\n", sep = ""))
+  } else if (top_number_to_plot < 1) {
+    if (percent_sort_method == "by_dataset") {
+      cat(paste("Abundance filter: plotting taxa over ", top_number_to_plot, "% abundance relative to ", normalizing_HMM, "\n", sep = ""))
+    } else if (percent_sort_method == "by_HMM") {
+      cat(paste("Abundance filter: plotting taxa over ", top_number_to_plot, "% abundance within each gene", "\n", sep = ""))
+    }
+  }
+  cat("\n")
+  if (write_tables == TRUE) {
+    cat("write_tables = TRUE; will print output tables\n")
+  } else if (write_tables == FALSE) {
+    cat("write_tables = FALSE; will not print output tables\n")
+  }
+  if (printPDF == TRUE) {
+    cat(paste("printPDF = TRUE; will print output PDFs with width/height scaling of ", PDF_dimension_scaling[1], "/", PDF_dimension_scaling[2], "\n", sep = ""))
+  } else if (printPDF == FALSE) {
+    cat("printPDF = FALSE; will not print output PDFs\n")
+  }
+  cat("\n")
+  
+  if (print_custom_plot == TRUE) {
+    cat(paste("print_custom_plot = TRUE; will create custom plot from provided template ", custom_plot_template_filename, "\n", sep = ""))
+  } else if (print_custom_plot == FALSE) {
+    cat("print_custom_plot = FALSE; will not create custom plot\n")
+  }
+  cat("\n")
+  
+  if (make_taxa_subset == TRUE) {
+    cat(paste("make_taxa_subset = TRUE; will create custom plot subsetting these (rank ", tax_rank_to_plot, ") taxa: ", glue::collapse(taxa_names_to_subset, sep = ", "), "\n", sep = ""))
+  } else if (make_taxa_subset == FALSE) {
+    cat("make_taxa_subset = FALSE; will not create subset plot")
+  }
+  cat("\n")
+
+}
+
+
 collapse_table <- function(table, tax_rank) {
   # Test vars
   # table <- hits_all
@@ -290,6 +350,65 @@ make_barplot_template <- function(subsetted_table) {
   return(plotting_template_table)
 }
 
+
+subset_barplot <- function(plotting_table, normalized_hits_table, hmms_to_plot, taxa_to_plot) {
+  # Function to highlight specific community members of interest ONLY
+  
+  # # test vars for developing function
+  # plotting_table <- hits_collapsed
+  # normalized_hits_table <- normalizing_HMM_hits_summary
+  # hmms_to_plot <- HMMs_to_plot
+  # taxa_to_plot <- taxa_subset
+  
+  # Plotting table must be COLLAPSED but can be either before OR after subset step
+  # *** REQUIRES global variable 'normalizing_HMM'
+  
+  plotting_taxon_rank <- colnames(plotting_table)[3]
+  
+  # Filter input tables
+  plotting_table_filtered <- dplyr::filter(plotting_table, HMM.Family %in% hmms_to_plot , get(plotting_taxon_rank) %in% taxa_to_plot) # See https://stackoverflow.com/a/34220245, accessed 171117
+  # Also remove normalizing HMM if present
+  normalized_hits_filtered <- dplyr::filter(normalized_hits_table, HMM.Family %in% hmms_to_plot & HMM.Family != normalizing_HMM)
+  colnames(normalized_hits_filtered)[3] <- "normalized_TOTAL_count_to_rpoB"
+  
+  # Switch from proportion to percent
+  normalized_hits_filtered$normalized_TOTAL_count_to_rpoB <- normalized_hits_filtered$normalized_TOTAL_count_to_rpoB * 100
+  plotting_table_filtered$normalized_count_to_rpoB <- plotting_table_filtered$normalized_count_to_rpoB * 100
+  
+  # plotting_table_filtered <- dplyr::left_join(plotting_table_filtered, normalized_hits_filtered, by = c("Dataset", "HMM.Family"))
+  # plotting_table_filtered$rel_abund <- plotting_table_filtered$normalized_count_to_rpoB / plotting_table_filtered$normalized_TOTAL_count_to_rpoB
+  
+  # # Decide on colours
+  # plotting_colours <- c(hue_pal()(length(taxa)), "#808080")
+  
+  # Make plot
+  bar_plot_subset <- ggplot() +
+    geom_bar(data = normalized_hits_filtered, aes(x = Dataset, weight = normalized_TOTAL_count_to_rpoB), fill = "#808080") +
+    geom_bar(data = plotting_table_filtered, aes_string(x = "Dataset", weight = colnames(plotting_table_filtered)[4], 
+                                                        fill = colnames(plotting_table_filtered)[3]), position = "stack") +
+    facet_grid(HMM.Family ~ ., scales = "fixed") +
+    theme_bw() +
+    theme(panel.grid = element_blank(), axis.title = element_text(size = 12), 
+          strip.text = element_text(size = 11, face = "italic"), strip.background = element_rect(fill = "#e6e6e6"),
+          panel.border = element_rect(colour = "transparent"), panel.spacing.y = unit(3, "mm"),
+          axis.text = element_text(size = 10, colour = "black"), axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
+          axis.ticks = element_line(size = 0.5, colour = "black"), axis.line = element_line(size = 0.5),
+          legend.text = element_text(size = 10, face = "italic"), legend.title = element_blank(),
+          legend.key = element_rect(colour = "transparent"), legend.key.size = unit(6, "mm"),
+          legend.spacing = unit(1, "mm"), legend.box.just = "left", plot.margin = unit(c(2,2,2,2), "mm")) +
+    guides(fill = guide_legend(ncol = 1)) +
+    xlab("Sample") +
+    ylab("Gene hits relative to rpoB (%; normalized)")
+  
+  return(bar_plot_subset)
+}
+
+
+#############################################
+### Part 4: collapse table to taxonomic rank, subset, and make auto plots ###
+#############################################
+print("Collapsing to desired rank...")
+
 # Subset to HMMs of interest
 hits_all <- dplyr::filter(hits_all, HMM.Family %in% HMMs_to_plot)
 
@@ -310,6 +429,7 @@ if (write_tables == TRUE) {
 }
 
 # 3. Generate an automated barplot of the subsetted table. Print if desired
+print("Making plots...")
 auto_barplot <- make_automated_barplot(hits_collapsed_subset)
 
 print(auto_barplot)
@@ -319,20 +439,33 @@ if (printPDF == TRUE) {
   
   # Scale plot dimensions relative to input data size
   # Width: consider the number of datasets (x axis) and the longest legend entry
-  auto_barplot_width <- length(unique(hits_collapsed_subset$Dataset)) * 15 + max(nchar(unique(hits_collapsed_subset[,3]))) * 3
+  auto_barplot_width <- (length(unique(hits_collapsed_subset$Dataset)) * 13 + max(nchar(unique(hits_collapsed_subset[,3]))) * 2) * PDF_dimension_scaling[1]
   # Height: consider the number of HMMs (y panels) and the longest dataset name (x axis label)
-  auto_barplot_height <- length(unique(hits_collapsed_subset$HMM.Family)) * 40 + max(nchar(unique(hits_collapsed_subset$Dataset))) * 2
+  auto_barplot_height <- (length(unique(hits_collapsed_subset$HMM.Family)) * 40 + max(nchar(unique(hits_collapsed_subset$Dataset))) * 2) * PDF_dimension_scaling[2]
   
   ggsave(auto_barplot_filename, width = auto_barplot_width, height = auto_barplot_height, units = c("mm"))
 }
 
-# 4. Print custom plotting template if desired, then exit
-if (print_custom_plot_template == TRUE) {
-  barplot_template <- make_barplot_template(hits_collapsed_subset)
+# 4. Print custom plotting template
+barplot_template <- make_barplot_template(hits_collapsed_subset)
+plotting_template_table_filename <- paste(output_name_general, "_05_custom_plot_template_", tax_rank_to_plot, "_", top_number_to_plot, ".tsv", sep = "")
+write.table(barplot_template, file = plotting_template_table_filename, sep = "\t", row.names = F, col.names = T)
+
+# 5. Optionally make subset barplot if desired
+if (make_taxa_subset == TRUE) {
+  subset_plot <- subset_barplot(hits_collapsed, normalizing_HMM_hits_summary, HMMs_to_plot, taxa_names_to_subset)
   
-  # Write to file
-  plotting_template_table_filename <- paste(output_name_general, "_05_custom_plot_template_", tax_rank_to_plot, "_", top_number_to_plot, ".tsv", sep = "")
-  write.table(barplot_template, file = plotting_template_table_filename, sep = "\t", row.names = F, col.names = T)
+  if (printPDF == TRUE) {
+    sub_barplot_filename <- paste(output_name_general, "_06_subset_barplot_", tax_rank_to_plot, "_", top_number_to_plot, ".pdf", sep = "")
+    
+    # Scale plot dimensions relative to input data size
+    # Width: consider the number of datasets (x axis) and the longest legend entry
+    sub_barplot_width <- (length(unique(hits_collapsed_subset$Dataset)) * 13 + max(nchar(taxa_names_to_subset)) * 2) * PDF_dimension_scaling[1]
+    # Height: consider the number of HMMs (y panels) and the longest dataset name (x axis label)
+    sub_barplot_height <- (length(HMMs_to_plot) * 40 + max(nchar(unique(hits_collapsed_subset$Dataset))) * 2) * PDF_dimension_scaling[2]
+    
+    ggsave(sub_barplot_filename, width = sub_barplot_width, height = sub_barplot_height, units = c("mm"))
+  }
   
 }
 
@@ -418,15 +551,22 @@ if (print_custom_plot == TRUE) {
   
   print(custom_barplot)
   if (printPDF == TRUE) {
-    custom_barplot_filename <- paste(output_name_general, "_06_custom_barplot_", tax_rank_to_plot, "_", top_number_to_plot, ".pdf", sep = "")
+    custom_barplot_filename <- paste(output_name_general, "_07_custom_barplot_", tax_rank_to_plot, "_", top_number_to_plot, ".pdf", sep = "")
     
-    # Scale plot dimensions relative to input data size
+        # Scale plot dimensions relative to input data size
     # Width: consider the number of datasets (x axis) and the longest legend entry
-    custom_barplot_width <- length(unique(hits_collapsed_subset$Dataset)) * 15 + max(nchar(unique(hits_collapsed_subset[,3]))) * 3
+    custom_barplot_width <- (length(unique(hits_collapsed_subset$Dataset)) * 13 + max(nchar(unique(hits_collapsed_subset[,3]))) * 2) * PDF_dimension_scaling[1]
     # Height: consider the number of HMMs (y panels) and the longest dataset name (x axis label)
-    custom_barplot_height <- length(unique(hits_collapsed_subset$HMM.Family)) * 40 + max(nchar(unique(hits_collapsed_subset$Dataset))) * 2
+    custom_barplot_height <- (length(unique(hits_collapsed_subset$HMM.Family)) * 40 + max(nchar(unique(hits_collapsed_subset$Dataset))) * 2)  * PDF_dimension_scaling[2]
     
     ggsave(custom_barplot_filename, width = custom_barplot_width, height = custom_barplot_height, units = c("mm"))
   }
 }
 
+### Lastly, if run was successful, make a logfile of settings used:
+custom_barplot_filename <- paste(output_name_general, "_00_LOG_", tax_rank_to_plot, "_", top_number_to_plot, ".log", sep = "")
+sink(custom_barplot_filename, type = c("output"))
+make_settings_log()
+sink()
+
+print("metannotate_barplots.R: finished running successfully.")
