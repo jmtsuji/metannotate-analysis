@@ -242,8 +242,6 @@ subset_collapsed_table <- function(collapsed_table, top_num) {
   # Determine sort method based on top_num provided
   if (top_num >= 1) {
     sort_method <- "top_num"
-    sort_method <- "top_perc_normalized"
-    top_num < 1
   } else if (top_num < 1 && percent_sort_method == "by_dataset") {
     sort_method <- "top_perc_by_dataset"
   } else if (top_num < 1 && percent_sort_method == "by_HMM") {
