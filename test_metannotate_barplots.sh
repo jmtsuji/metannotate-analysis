@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
 set -euo pipefail
-# 96_well_spec_analysis_test.sh
+# test_metannotate_barplots.sh
 # Copyright Jackson M. Tsuji, 2018
 # Neufeld lab, University of Waterloo, Canada
-# Created May 31, 2018
-# Description: Runs automated test of 96_well_spec_analysis.R
+# Description: Runs automated test of metannotate_barplots.R
 
 # Hard-coded variables
-SCRIPT_VERSION="v0.3-dev" # to match git tag
-TARGET_FILES=(example_raw_data.tsv example_unknowns.tsv)
+SCRIPT_VERSION="v0.9" # to match git tag
+SOURCE_FILES=(rpoB_0_MetagenomeTest_0_annotations_5z4KAl762541689.tsv dataset_info_template_FILLED.tsv hmm_info_template_FILLED.tsv 171011_barplot_05_custom_plot_template_Family_0.01_FILLED.tsv)
+TARGET_FILES=(171011_barplot_01_total_normalized_hits.tsv 171011_barplot_02_collapsed_to_Family.tsv 171011_barplot_03_plotting_table_Family_0.01.tsv)
 
 # If no input is provided, exit out and provide help
 if [ $# == 0 ]
 	then
-	printf "$(basename $0): Runs automated test of 96_well_spec_analysis.R - simple check of md5 hashes for key output files.\n"
+	printf "$(basename $0): Runs automated test of metannotate_barplots.R - simple check of md5 hashes for key output files.\n"
 	printf "Version: ${SCRIPT_VERSION}\n"
 	printf "Contact Jackson M. Tsuji (jackson.tsuji@uwaterloo.ca) for bug reports or feature requests.\n\n"
 	printf "Usage: $(basename $0) repo_directory\n\n"
@@ -33,8 +33,9 @@ fi
 WORK_DIR=$1
 
 # Hard-coded extensions of user-supplied variable
-MD5_DIR=${WORK_DIR}/testing/output_known_md5
-TEST_DIR=${WORK_DIR}/testing/output_test
+SOURCE_DIR=${WORK_DIR}/testing/inputs
+TEST_DIR=${WORK_DIR}/testing/outputs
+MD5_DIR=${WORK_DIR}/testing/output_md5
 
 function test_inputs {
 	# Description: tests that provided folders and files exist in the proper configuration
@@ -46,6 +47,18 @@ function test_inputs {
 		exit 1
 	fi
 
+	if [ ! -d ${SOURCE_DIR} ]; then
+		echo "ERROR: Cannot find input file directory at '${SOURCE_DIR}'. Exiting..."
+		exit 1
+	fi
+	
+	for file in ${SOURCE_FILES[@]}; do
+		if [ ! -f ${SOURCE_DIR}/${file}.md5 ]; then
+			echo "ERROR: Cannot find input file '${file}' in '${SOURCE_DIR}'. Exiting..."
+			exit 1
+		fi
+	done
+	
 	if [ ! -d ${MD5_DIR} ]; then
 		echo "ERROR: Cannot find md5sum directory at '${MD5_DIR}'. Exiting..."
 		exit 1
@@ -62,7 +75,8 @@ function test_inputs {
 
 function run_script {
 	
-	Rscript 96_well_spec_analysis.R -i testing/input/example_raw_plate_data.txt -m testing/input/example_sample_metadata.tsv -o testing/output_test/example > /dev/null
+	local out_name="${TEST_DIR}/barplot_test" # **LINKED to the prefix of the TARGET_FILES[@]
+	Rscript metannotate_barplots.R -i ${SOURCE_DIR}/SOURCE_FILES[0] -d ${SOURCE_DIR}/SOURCE_FILES[1] -m ${SOURCE_DIR}/SOURCE_FILES[2] -t ${SOURCE_DIR}/SOURCE_FILES[3] -o ${out_name} > /dev/null
 
 }
 
