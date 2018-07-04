@@ -34,8 +34,8 @@ WORK_DIR=$1
 
 # Hard-coded extensions of user-supplied variable
 SOURCE_DIR=${WORK_DIR}/testing/inputs
-TEST_DIR=${WORK_DIR}/testing/outputs
-MD5_DIR=${WORK_DIR}/testing/output_md5
+TEST_DIR=${WORK_DIR}/testing/outputs_test
+MD5_DIR=${WORK_DIR}/testing/outputs_known_md5
 
 function test_inputs {
 	# Description: tests that provided folders and files exist in the proper configuration
