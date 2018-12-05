@@ -13,15 +13,15 @@ library(glue)
 ##### User variables ##################
 
 ### Global variables
-setwd("/Users/JTsuji/Documents/Research_General/PhD/04e_Biogeography/05_JGI_metagenome_analysis/02b_171116_prelim_2/03_results_phase2/")
+setwd("/home/jmtsuji/Research_General/PhD/04e_Biogeography/05_JGI_metagenome_analysis/02b_171116_prelim_2/04_results_phase3")
 write_tables <- TRUE # Print off summary tables?
 printPDF <- TRUE # Print PDF plots to the folder?
 PDF_dimension_scaling <- c(1,1.2) # If you want to adjust the relative c(width, height) of the plots compared to the defaults
                                 # Default is c(1,1)
-output_name_general <- "01b_rpoB_top10/171118_02" # general name of output files to append to
+output_name_general <- "02a_Fe_S/180110_vs1" # general name of output files to append to
 
 ### Inputs
-input_filename <- "00b_script_input/all_annotations_phase1and2_COMB.tsv"
+input_filename <- "00b_script_input/all_annotations_phase1and2and3_COMB.tsv"
 
 script_setup <- FALSE # Prints off raw HMM and sample names in template for setting up sample data files, then exits early.
                       # MUST run this the first time you use this script on a given dataset
@@ -34,10 +34,11 @@ dataset_info_filename <- "00b_script_input/dataset_info_template_FILLED.tsv"  # 
 hmm_info_filename <- "00b_script_input/hmm_info_template_FILLED.tsv" # Includes HMM raw names, corrected names for plotting, and HMM lengths
 
 ### Basic plot settings
-HMMs_to_plot <- c("rpoB")
+HMMs_to_plot <- c("cyc2-PV1-GSB", "dsrA")
+datasets_to_plot <- "all" # or give the names of the datasets in the order you want them plotted
 normalizing_HMM <- "rpoB"
 tax_rank_to_plot <- "Family"
-top_number_to_plot <- 10  # If < 1, then plot all taxa with at least this relative abundance in the community.
+top_number_to_plot <- 0.005  # If < 1, then plot all taxa with at least this relative abundance in the community.
                             # If > 1 (e.g., 10), then plot the top ___ (e.g., 10) taxa for each gene
 percent_sort_method <- "by_dataset" # If top_number_to_plot is < 1, you need to provide guidance for which type of percentage-based sorting to use. Options are either:
                                             # If "by_dataset", gives the taxa above x% relative to the normalizing_HMM for each dataset.
