@@ -25,7 +25,7 @@ Install R packages within R via, `install.packages("argparser")`, for example. A
 ### Usage
 Source the script from your R console to then be able to use the included functions to analyze your data in an explorative manner. NOTE that you don't even need to clone the git repo -- you can just run this line of code in your R console to source the script from online:
 ```
-source(https://github.com/jmtsuji/metannotate-analysis/releases/download/v0.9.5/metannotate_barplots.R)
+source("https://github.com/jmtsuji/metannotate-analysis/releases/download/v0.9.5/metannotate_barplots.R")
 ```
 
 In addition, before you get started, you need to make sure that you have the following files/information from MetAnnotate:
