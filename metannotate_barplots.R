@@ -200,7 +200,7 @@ filter_by_evalue <- function(metannotate_data, evalue = 1e-40) {
   # Then see how it looks after filtering
   read_counts$evalue_filtered_data <- summarize_total_reads_all_genes(metannotate_data)
   
-  # Calculate % change (pseudocount added into the denominator to prevent Inf/NaN values)
+  # Calculate % change
   read_counts$percent_change <- round((read_counts$evalue_filtered_data[,c(-1)] - read_counts$original_data[,c(-1)]) /
     (read_counts$original_data[,c(-1)] + 1e-10) * 100, digits = 1)
   read_counts$percent_change <- tibble::add_column(read_counts$percent_change, 
@@ -441,11 +441,16 @@ process_plotting_colours <- function(metannotate_data_normalized, colouring_temp
 
 
 metannotate_ggplot <- function(metannotate_data_normalized, type = "bar", plotting_colours, 
-                               collapse_taxonomy_metannotate, hit_totals, normalizing_HMM) {
+                               collapse_taxonomy_metannotate, hit_totals, normalizing_HMM,
+                               space = "free", bubble_size_range = c(1,20), alpha = 0.8,
+                               bubble_labels = TRUE) {
+  
+  if (type == "bubble") {
+    metannotate_data_normalized$label <- round(x = metannotate_data_normalized$percent_abundance, digits = 1)
+  }
   
   # Make the base plot
   metannotate_plot <- ggplot(metannotate_data_normalized) +
-    facet_grid(HMM.Family ~ ., scales = "free") +
     theme_bw() +
     theme(axis.title = element_text(size = 12), axis.text = element_text(size = 10, colour = "black"),
           strip.text = element_text(size = 11, face = "italic"), strip.background = element_rect(fill = "#e6e6e6"),
@@ -455,6 +460,17 @@ metannotate_ggplot <- function(metannotate_data_normalized, type = "bar", plotti
           legend.key = element_rect(colour = "transparent"), legend.key.size = unit(6, "mm"),
           legend.spacing = unit(1, "mm"), legend.box.just = "left") +
     xlab("Sample")
+  
+  if (space == "fixed") {
+    metannotate_plot <- metannotate_plot +
+      facet_grid(HMM.Family ~ ., scales = "free", space = "fixed")
+  } else if (space == "free") {
+    metannotate_plot <- metannotate_plot +
+      facet_grid(HMM.Family ~ ., scales = "free", space = "free")
+  } else {
+    flog.error(glue::glue("'space' must be either 'free' or 'fixed'. You provided ", space, ". Exiting..."))
+    quit(save = "no", status = 1)
+  }
   
   if (type == "bar") {
     flog.debug("Generating barplot")
@@ -475,18 +491,27 @@ metannotate_ggplot <- function(metannotate_data_normalized, type = "bar", plotti
     metannotate_plot <- metannotate_plot +
       geom_point(aes_string(x = "Dataset", y = collapse_taxonomy_metannotate,
                             size = "percent_abundance", fill = "Closest.Homolog.Phylum"), shape = 21,
-                 alpha = 0.8) +
-      scale_size_continuous(range = c(1,10)) +
+                 alpha = alpha) +
+      scale_size_continuous(range = bubble_size_range) +
       scale_fill_manual(values = 
                           choose_discrete_colour_scale(length(unique(
                             dplyr::pull(metannotate_data_normalized, Closest.Homolog.Phylum))))) +
       theme(axis.text.y = element_text(size = 5, face = "italic")) +
-      guides(size = guide_legend(title = paste("Gene hits relative to \n", normalizing_HMM, 
-                                               " (%; normalized)", sep = ""), 
-                                 override.aes = list(fill = "#4d4d4d")),
-             fill = guide_legend(title = "Phylum")) +
+      guides(fill = guide_legend(title = "Phylum")) +
       ylab(paste(strsplit(collapse_taxonomy_metannotate, split = ".", fixed = TRUE)[[1]][3],
                  " of closest homologue", sep = ""))
+    
+    if (bubble_labels == TRUE) {
+      metannotate_plot <- metannotate_plot +
+        geom_text(aes_string(x = "Dataset", y = collapse_taxonomy_metannotate, label = "label"),
+                  size = 2) +
+        guides(size = FALSE)
+    } else if (bubble_labels == FALSE) {
+      metannotate_plot <- metannotate_plot +
+        guides(size = guide_legend(title = paste("Gene hits relative to \n", normalizing_HMM, 
+                                                 " (%; normalized)", sep = ""), 
+                                   override.aes = list(fill = "#4d4d4d")))
+    }
     
   }
   
@@ -495,7 +520,9 @@ metannotate_ggplot <- function(metannotate_data_normalized, type = "bar", plotti
 }
 
 metannotate_plotter <- function(metannotate_data_normalized_list, type = "bar", top_x = NA, highlight_taxon = NA,
-                                colouring_template_filename = NA, percent_mode = "within_sample") {
+                                colouring_template_filename = NA, percent_mode = "within_sample",
+                                space = "free", bubble_size_range = c(1,20), alpha = 0.8,
+                                bubble_labels = TRUE) {
   # # Example column names of the plotting table, if collapsed to family
   # [1] "Dataset"                      "HMM.Family"                   "Closest.Homolog.Superkingdom"
   # [4] "Closest.Homolog.Phylum"       "Closest.Homolog.Class"        "Closest.Homolog.Order"       
@@ -542,7 +569,9 @@ metannotate_plotter <- function(metannotate_data_normalized_list, type = "bar", 
   
   flog.info("Creating the ggplot")
   metannotate_plot <- metannotate_ggplot(metannotate_data, type = type, plotting_colours, 
-                                         collapse_taxonomy_metannotate, hit_totals, normalizing_HMM)
+                                         collapse_taxonomy_metannotate, hit_totals, normalizing_HMM,
+                                         space, bubble_size_range, alpha = alpha,
+                                         bubble_labels = bubble_labels)
   
   return(metannotate_plot)
   
@@ -551,7 +580,9 @@ metannotate_plotter <- function(metannotate_data_normalized_list, type = "bar", 
 
 explore_metannotate_data <- function(metannotate_data_renamed, evalue = 1e-40, taxon = "Family",
                                      normalizing_HMM = "rpoB", plot_type = "bar", top_x = 0.02,
-                                     colouring_template_filename = NA, percent_mode = "within_sample") {
+                                     colouring_template_filename = NA, percent_mode = "within_sample",
+                                     space = "free", bubble_size_range = c(1,40), alpha = 0.8,
+                                     bubble_labels = TRUE) {
   
   # Filter by e-value cutoff and report stats to user
   flog.info(glue::glue("Filtering by e-value cutoff of ", evalue))
@@ -575,7 +606,10 @@ explore_metannotate_data <- function(metannotate_data_renamed, evalue = 1e-40, t
   # Make plots
   flog.info("Plotting data")
   metannotate_plot <- metannotate_plotter(metannotate_data_normalized_list, type = plot_type, top_x = top_x,
-                                          colouring_template_filename = colouring_template_filename)
+                                          colouring_template_filename = colouring_template_filename,
+                                          percent_mode = percent_mode, space = space, 
+                                          bubble_size_range = bubble_size_range, alpha = alpha,
+                                          bubble_labels = bubble_labels)
   
   return(metannotate_plot)
   
