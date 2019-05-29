@@ -161,8 +161,13 @@ summarize_total_reads_all_genes <- function(metannotate_data, format = "wide", c
     gene_summary <- tibble::add_column(gene_summary, gene = x)
     return(gene_summary)
   }))
-  gene_summaries_df$gene <- factor(gene_summaries_df$gene, levels = levels(metannotate_data$HMM.Family),
-                                   ordered = TRUE)
+  
+  # If genes have been assigned a factor, then re-assign
+  if (is.factor(gene_summaries_df$gene) == TRUE) {
+    flog.debug("Re-assigning factors to output table")
+    gene_summaries_df$gene <- factor(gene_summaries_df$gene, levels = levels(metannotate_data$HMM.Family),
+                                     ordered = TRUE)
+  }
   
   # Make wide format if desired
   if (tolower(format) == "wide") {
@@ -177,7 +182,6 @@ summarize_total_reads_all_genes <- function(metannotate_data, format = "wide", c
     return(gene_summaries_df)
     
   }
-  
   
 }
 
