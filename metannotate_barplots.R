@@ -197,7 +197,7 @@ summarize_total_reads_all_genes <- function(metannotate_data, format = "wide", c
 #' - List of three read count tables. First and second are from before and after e-value filtration.
 #'   See summarize_total_reads_all_genes(). The third is the % change between the above two tables.
 #' @export
-filter_by_evalue <- function(metannotate_data, evalue = 1e-40) {
+filter_by_evalue <- function(metannotate_data, evalue = 1e-10) {
   # Check initial stats for the HMMs
   read_counts <- list()
   read_counts$original_data <- summarize_total_reads_all_genes(metannotate_data)
@@ -586,7 +586,7 @@ metannotate_plotter <- function(metannotate_data_normalized_list, type = "bar", 
 }
 
 
-explore_metannotate_data <- function(metannotate_data_renamed, evalue = 1e-40, taxon = "Family",
+explore_metannotate_data <- function(metannotate_data_renamed, evalue = 1e-10, taxon = "Family",
                                      normalizing_HMM = "rpoB", plot_type = "bar", top_x = 0.02,
                                      colouring_template_filename = NA, percent_mode = "within_sample",
                                      space = "free", bubble_size_range = c(1,40), alpha = 0.8,
