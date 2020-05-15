@@ -1,6 +1,6 @@
 # metannotate_barplots.R
 # MetAnnotate barplot generator
-# Copyright Jackson M. Tsuji, 2018 (Neufeld Lab)
+# Copyright Jackson M. Tsuji, 2020 (Neufeld Lab)
 
 ##### Load libraries ######
 library(argparser)
@@ -24,9 +24,10 @@ library(scales)
 #' @export
 read_metannotate_tibble <- function(metannotate_table_filename) {
   
-  # Load the data with care
-  metannotate_data <- tibble::as.tibble(read.table(metannotate_table_filename, sep = "\t", header = TRUE, 
-                                  comment.char = "", quote = "", stringsAsFactors = FALSE))
+  # Load the data
+  metannotate_data <- read.table(metannotate_table_filename, sep = "\t", header = TRUE, 
+                                comment.char = "", quote = "", stringsAsFactors = FALSE) %>%
+    tibble::as_tibble()
   
   return(metannotate_data)
 }
@@ -78,10 +79,12 @@ create_setup_templates <- function(metannotate_data, write_tables = FALSE) {
 map_naming_information <- function(metannotate_data, hmm_naming_info_filename, dataset_naming_info_filename) {
   
   # Read the data
-  hmm_info <- tibble::as.tibble(read.table(hmm_naming_info_filename, sep = "\t", header = TRUE, 
-                                           stringsAsFactors = FALSE, comment.char = "", quote = ""))
-  dataset_info <- tibble::as.tibble(read.table(dataset_naming_info_filename, sep = "\t", header = TRUE, 
-                                               stringsAsFactors = FALSE, comment.char = "", quote = ""))
+  hmm_info <- read.table(hmm_naming_info_filename, sep = "\t", header = TRUE, 
+                         stringsAsFactors = FALSE, comment.char = "", quote = "") %>%
+    tibble::as_tibble()
+  dataset_info <- read.table(dataset_naming_info_filename, sep = "\t", header = TRUE, 
+                             stringsAsFactors = FALSE, comment.char = "", quote = "") %>%
+    tibble::as_tibble()
   
   # Remove elements of the metannotate tablenot in the naming info tables
   metannotate_data <- dplyr::filter(metannotate_data, (HMM.Family %in% hmm_info$raw_name) &
@@ -434,8 +437,9 @@ process_plotting_colours <- function(metannotate_data_normalized, colouring_temp
   } else if (file.exists(colouring_template_filename) == TRUE) {
     flog.info(glue::glue("Loading plot colour template from '", colouring_template_filename, "'"))
     
-    plotting_colours <- tibble::as.tibble(read.table(colouring_template_filename, sep = "\t", header = TRUE, 
-                                                     comment.char = "", stringsAsFactors = FALSE))
+    plotting_colours <- read.table(colouring_template_filename, sep = "\t", header = TRUE, 
+                                   comment.char = "", stringsAsFactors = FALSE) %>%
+      tibble::as_tibble()
     
   }
   
