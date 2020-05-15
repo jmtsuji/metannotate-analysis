@@ -208,11 +208,12 @@ filter_by_evalue <- function(metannotate_data, evalue = 1e-10) {
   read_counts$evalue_filtered_data <- summarize_total_reads_all_genes(metannotate_data)
   
   # Calculate % change
-  read_counts$percent_change <- round((read_counts$evalue_filtered_data[,c(-1)] - read_counts$original_data[,c(-1)]) /
-    (read_counts$original_data[,c(-1)] + 1e-10) * 100, digits = 1)
-  read_counts$percent_change <- tibble::add_column(read_counts$percent_change, 
-                                                   Dataset = read_counts$original_data$Dataset,
-                                                   .before = 1)
+  pseudo_count <- 1e-10 # To prevent divide-by-zero errors
+  read_counts$percent_change <- ((dplyr::select(read_counts$evalue_filtered_data, -Dataset) - 
+                                    dplyr::select(read_counts$original_data, -Dataset)) / 
+                                   (dplyr::select(read_counts$original_data, -Dataset) + pseudo_count) * 100) %>%
+    round(digits = 1) %>%
+    tibble::add_column(Dataset = dplyr::pull(read_counts$original_data, Dataset), .before = 1)
   
   output_list <- list(metannotate_data, read_counts)
   names(output_list) <- c("metannotate_data", "read_counts")
