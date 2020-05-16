@@ -17,7 +17,7 @@ metannotate_plotter(
 )
 }
 \arguments{
-\item{metannotate_data_normalized_list}{List output of normalize_collapsed_metannotate_data()}
+\item{metannotate_data_normalized_list}{List output of \code{\link{normalize_collapsed_metannotate_data}}}
 
 \item{colouring_template_filename}{Filename of the colouring template you want to load
 If the file does not exist, then this function will write a template to that file
@@ -41,7 +41,7 @@ show some of the taxa that were hit. This would be a good time to use 'within_HM
 
 \item{dump_raw_data}{Return the normalized and subsetted table in lieu of a ggplot}
 
-\item{...}{Other fine-tuned plotting options controlled by metannotate_ggplot()}
+\item{...}{Other fine-tuned plotting options controlled by \code{\link{metannotate_ggplot}}}
 }
 \value{
 A ggplot of MetAnnotate data (or raw data; see above)

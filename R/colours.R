@@ -33,7 +33,8 @@ choose_discrete_colour_scale <- function(number_of_entries) {
 
 #' Generates colour for a metannotate barplot
 #' 
-#' @param metannotate_data_normalized Tibble of normalized metannotate data - see normalize_collapsed_metannotate_data()
+#' @param metannotate_data_normalized Tibble of normalized metannotate data - see
+#' \code{\link{normalize_collapsed_metannotate_data}}
 #' @return a tibble of unique taxa with HTML colour codes in the 'colour' column
 #' @keywords internal
 generate_plotting_colours <- function(metannotate_data_normalized) {
@@ -60,8 +61,9 @@ generate_plotting_colours <- function(metannotate_data_normalized) {
 
 #' Generates colour for a metannotate barplot or loads user-defined colours
 #' 
-#' @description A wrapper for generate_plotting_colours() to handle bigger-picture decision making
-#' @param metannotate_data_normalized Tibble of normalized metannotate data - see normalize_collapsed_metannotate_data()
+#' @description A wrapper for \code{\link{generate_plotting_colours}} to handle bigger-picture decision making
+#' @param metannotate_data_normalized Tibble of normalized metannotate data - see
+#' \code{\link{normalize_collapsed_metannotate_data}}
 #' @param colouring_template_filename Filename of the colouring template you want to load
 #' If the file does not exist, then this function will write a template to that file
 #' If 'NA' is entered, then the function will auto-generate colours and continue on

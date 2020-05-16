@@ -74,8 +74,9 @@ create_setup_templates <- function(metannotate_data, write_tables = FALSE,
 #' - Only elements in these tables will be used in the script. Any elements you omit from the info tables (e.g., R2 reads,
 #'   if you don't want to plot these) will be deleted from the metannotate table.
 #' @param metannotate_data Tibble of metannotate data
-#' @param hmm_naming_info_filename Filepath to HMM naming template exported from create_setup_templates()
-#' @param dataset_naming_info_filename Filepath to Dataset naming template exported from create_setup_templates()
+#' @param hmm_naming_info_filename Filepath to HMM naming template exported from \code{\link{create_setup_templates}}
+#' @param dataset_naming_info_filename Filepath to Dataset naming template exported from
+#' \code{\link{create_setup_templates}}
 #' @return Tibble of metannotate data (renamed with factors)
 #' @export
 map_naming_information <- function(metannotate_data, hmm_naming_info_filename,

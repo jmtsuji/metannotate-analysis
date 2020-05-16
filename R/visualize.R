@@ -126,7 +126,7 @@ metannotate_ggplot <- function(metannotate_data_normalized, hit_totals, plotting
 #'
 #' @aliases plot
 #' @description Wrapper to generate a ggplot of MetAnnotate data with subset, colours, labels, and so on
-#' @param metannotate_data_normalized_list List output of normalize_collapsed_metannotate_data()
+#' @param metannotate_data_normalized_list List output of \code{\link{normalize_collapsed_metannotate_data}}
 #' @param colouring_template_filename Filename of the colouring template you want to load
 #' If the file does not exist, then this function will write a template to that file
 #' If 'NA' is entered, then the function will auto-generate colours and continue on
@@ -140,7 +140,7 @@ metannotate_ggplot <- function(metannotate_data_normalized, hit_totals, plotting
 #' show some of the taxa that were hit. This would be a good time to use 'within_HMM'.
 #' @param normalizing_HMM Name of the normalizing HMM (e.g., 'rpoB')]; specify 'auto' to attempt auto-detection
 #' @param plot_normalizing_HMM Retain the normalizing_HMM in the final ggplot?
-#' @param ... Other fine-tuned plotting options controlled by metannotate_ggplot()
+#' @param ... Other fine-tuned plotting options controlled by \code{\link{metannotate_ggplot}}
 #' @param dump_raw_data Return the normalized and subsetted table in lieu of a ggplot
 #' @return A ggplot of MetAnnotate data (or raw data; see above)
 #' @export

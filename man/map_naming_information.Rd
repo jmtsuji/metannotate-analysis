@@ -13,9 +13,10 @@ map_naming_information(
 \arguments{
 \item{metannotate_data}{Tibble of metannotate data}
 
-\item{hmm_naming_info_filename}{Filepath to HMM naming template exported from create_setup_templates()}
+\item{hmm_naming_info_filename}{Filepath to HMM naming template exported from \code{\link{create_setup_templates}}}
 
-\item{dataset_naming_info_filename}{Filepath to Dataset naming template exported from create_setup_templates()}
+\item{dataset_naming_info_filename}{Filepath to Dataset naming template exported from
+\code{\link{create_setup_templates}}}
 }
 \value{
 Tibble of metannotate data (renamed with factors)

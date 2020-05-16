@@ -6,14 +6,15 @@
 #'
 #' @aliases explore metannotate
 #' @description high-level exploration function for examining MetAnnotate data
-#' @param metannotate_data_mapped The tibble output by map_naming_information()
+#' @param metannotate_data_mapped The tibble output by \code{\link{map_naming_information}}
 #' @param evalue E-value cutoff for HMM hits
 #' @param taxon Character vector (length 1) giving the taxon name to collapse to
 #' Can be: domain, phylum, class, order, family, genus, species (case insensitive)
 #' @param normalizing_HMM Name of the normalizing HMM (e.g., 'rpoB')]; specify 'auto' to attempt auto-detection
 #' @param top_x Numeric vector (length 1) giving the subsetting amount you desire.
 #' If top_x >=1, the script will return the "top_x most abundant taxa" for each Dataset/HMM.Family
-#' If top_x <1, the script will return "all taxa of (top_x * 100%) abundance or greater for each Dataset/HMM.Family - but see below.
+#' If top_x <1, the script will return "all taxa of (top_x * 100%) abundance or greater for each Dataset/HMM.Family -
+#' but see below.
 #' @param percent_mode If top_x <1, there are two different methods for keeping the most abundant organisms:
 #' - "within_sample" -- the normalized % abundance relative to rpoB is used
 #' - "within_HMM" -- the percent abundance of that taxon within the specific HMM gene hits is used.
@@ -22,7 +23,8 @@
 #' @param colouring_template_filename Filename of the colouring template you want to load
 #' If the file does not exist, then this function will write a template to that file
 #' If 'NA' is entered, then the function will auto-generate colours and continue on
-#' #' @param ... Other fine-tuned plotting options controlled by metannotate_plotter()
+#' @param ... Other fine-tuned plotting options controlled by \code{\link{metannotate_plotter}} and the underlying
+#' \code{\link{metannotate_ggplot}}. Highlights include plot_type, which can be "bar" or "bubble"
 #' @return A ggplot of MetAnnotate data
 #' @export
 explore_metannotate_data <- function(metannotate_data_mapped, evalue = 1e-10, taxon = "Family",

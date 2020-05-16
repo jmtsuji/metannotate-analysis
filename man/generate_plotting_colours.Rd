@@ -7,7 +7,8 @@
 generate_plotting_colours(metannotate_data_normalized)
 }
 \arguments{
-\item{metannotate_data_normalized}{Tibble of normalized metannotate data - see normalize_collapsed_metannotate_data()}
+\item{metannotate_data_normalized}{Tibble of normalized metannotate data - see
+\code{\link{normalize_collapsed_metannotate_data}}}
 }
 \value{
 a tibble of unique taxa with HTML colour codes in the 'colour' column

@@ -10,7 +10,8 @@ process_plotting_colours(
 )
 }
 \arguments{
-\item{metannotate_data_normalized}{Tibble of normalized metannotate data - see normalize_collapsed_metannotate_data()}
+\item{metannotate_data_normalized}{Tibble of normalized metannotate data - see
+\code{\link{normalize_collapsed_metannotate_data}}}
 
 \item{colouring_template_filename}{Filename of the colouring template you want to load
 If the file does not exist, then this function will write a template to that file
@@ -20,5 +21,5 @@ If 'NA' is entered, then the function will auto-generate colours and continue on
 a tibble of unique taxa with HTML colour codes in the 'colour' column
 }
 \description{
-A wrapper for generate_plotting_colours() to handle bigger-picture decision making
+A wrapper for \code{\link{generate_plotting_colours}} to handle bigger-picture decision making
 }

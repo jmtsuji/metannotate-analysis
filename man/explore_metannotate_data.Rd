@@ -18,7 +18,7 @@ explore_metannotate_data(
 )
 }
 \arguments{
-\item{metannotate_data_mapped}{The tibble output by map_naming_information()}
+\item{metannotate_data_mapped}{The tibble output by \code{\link{map_naming_information}}}
 
 \item{evalue}{E-value cutoff for HMM hits}
 
@@ -29,7 +29,8 @@ Can be: domain, phylum, class, order, family, genus, species (case insensitive)}
 
 \item{top_x}{Numeric vector (length 1) giving the subsetting amount you desire.
 If top_x >=1, the script will return the "top_x most abundant taxa" for each Dataset/HMM.Family
-If top_x <1, the script will return "all taxa of (top_x * 100\%) abundance or greater for each Dataset/HMM.Family - but see below.}
+If top_x <1, the script will return "all taxa of (top_x * 100\%) abundance or greater for each Dataset/HMM.Family -
+but see below.}
 
 \item{percent_mode}{If top_x <1, there are two different methods for keeping the most abundant organisms:
 \itemize{
@@ -41,8 +42,10 @@ show some of the taxa that were hit. This would be a good time to use 'within_HM
 
 \item{colouring_template_filename}{Filename of the colouring template you want to load
 If the file does not exist, then this function will write a template to that file
-If 'NA' is entered, then the function will auto-generate colours and continue on
-#' @param ... Other fine-tuned plotting options controlled by metannotate_plotter()}
+If 'NA' is entered, then the function will auto-generate colours and continue on}
+
+\item{...}{Other fine-tuned plotting options controlled by \code{\link{metannotate_plotter}} and the underlying
+\code{\link{metannotate_ggplot}}. Highlights include plot_type, which can be "bar" or "bubble"}
 }
 \value{
 A ggplot of MetAnnotate data

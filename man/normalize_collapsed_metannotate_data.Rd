@@ -11,7 +11,8 @@ normalize_collapsed_metannotate_data(
 )
 }
 \arguments{
-\item{metannotate_data_collapsed}{Tibble of taxonomy-collapsed metannotate data - see collapse_metannotate_table_by_taxon()}
+\item{metannotate_data_collapsed}{Tibble of taxonomy-collapsed metannotate data - see
+\code{\link{collapse_metannotate_table_by_taxon}}}
 
 \item{normalizing_HMM}{Character vector (length 1) giving the plotting name of an HMM.Family in your table
 that you want to normalize all genes within each sample to. This should be a reliable single-copy taxonomic marker gene,

@@ -6,7 +6,8 @@
 #'
 #' @aliases normalize
 #' @description Double-normlizes metannotate data by HMM length and a single-copy gene marker
-#' @param metannotate_data_collapsed Tibble of taxonomy-collapsed metannotate data - see collapse_metannotate_table_by_taxon()
+#' @param metannotate_data_collapsed Tibble of taxonomy-collapsed metannotate data - see
+#' \code{\link{collapse_metannotate_table_by_taxon}}
 #' @param normalizing_HMM Character vector (length 1) giving the plotting name of an HMM.Family in your table
 #' that you want to normalize all genes within each sample to. This should be a reliable single-copy taxonomic marker gene, 
 #' e.g., rpoB, dnaK, and so on.
@@ -53,10 +54,12 @@ normalize_collapsed_metannotate_data <- function(metannotate_data_collapsed, nor
 #'
 #' @aliases subset
 #' @description Subsets normalized metannotate data to some desired threshold of most abundance organisms
-#' @param metannotate_data_normalized Tibble of normalized metannotate data - see normalize_collapsed_metannotate_data()
+#' @param metannotate_data_normalized Tibble of normalized metannotate data - see
+#' \code{\link{normalize_collapsed_metannotate_data}}
 #' @param top_x Numeric vector (length 1) giving the subsetting amount you desire.
 #' If top_x >=1, the script will return the "top_x most abundant taxa" for each Dataset/HMM.Family
-#' If top_x <1, the script will return "all taxa of (top_x * 100%) abundance or greater for each Dataset/HMM.Family - but see below.
+#' If top_x <1, the script will return "all taxa of (top_x * 100%) abundance or greater for each Dataset/HMM.Family -
+#' but see below.
 #' @param percent_mode If top_x <1, there are two different methods for keeping the most abundant organisms:
 #' - "within_sample" -- the normalized % abundance relative to rpoB is used
 #' - "within_HMM" -- the percent abundance of that taxon within the specific HMM gene hits is used.

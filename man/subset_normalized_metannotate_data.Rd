@@ -12,11 +12,13 @@ subset_normalized_metannotate_data(
 )
 }
 \arguments{
-\item{metannotate_data_normalized}{Tibble of normalized metannotate data - see normalize_collapsed_metannotate_data()}
+\item{metannotate_data_normalized}{Tibble of normalized metannotate data - see
+\code{\link{normalize_collapsed_metannotate_data}}}
 
 \item{top_x}{Numeric vector (length 1) giving the subsetting amount you desire.
 If top_x >=1, the script will return the "top_x most abundant taxa" for each Dataset/HMM.Family
-If top_x <1, the script will return "all taxa of (top_x * 100\%) abundance or greater for each Dataset/HMM.Family - but see below.}
+If top_x <1, the script will return "all taxa of (top_x * 100\%) abundance or greater for each Dataset/HMM.Family -
+but see below.}
 
 \item{percent_mode}{If top_x <1, there are two different methods for keeping the most abundant organisms:
 \itemize{
