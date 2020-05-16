@@ -639,6 +639,13 @@ metannotate_plotter <- function(metannotate_data_normalized_list, colouring_temp
   # Optionally remove the normalizing HMM from the final plot altogether
   if (plot_normalizing_HMM == FALSE) {
     metannotate_data <- dplyr::filter(metannotate_data, HMM.Family != normalizing_HMM)
+
+    if (nrow(metannotate_data) == 0) {
+      stop(paste0("Looks like you have no data left after removing the normalizing_HMM; ",
+                  "did you only include one HMM in your data? ",
+                  "Probably best that you leave 'plot_normalizing_HMM = TRUE'."))
+    }
+
   } else if (plot_normalizing_HMM != TRUE) {
     stop(paste0("'plot_normalizing_HMM' must be either TRUE or FALSE; you specified '",
                       plot_normalizing_HMM, "'."))
