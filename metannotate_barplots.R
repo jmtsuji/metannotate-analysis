@@ -8,54 +8,66 @@ library(parallel)
 library(futile.logger)
 library(roxygen2)
 library(tools)
-library(glue)
 library(tibble)
+library(tidyselect)
 library(plyr)
-library(dplyr)
-library(ggplot2)
-library(reshape2)
+library(dplyr, warn.conflicts = FALSE)
+library(tidyr)
 library(scales)
+library(ggplot2)
 #######
+
+# GLOBAL VARIABLES
+# Table relating canonical taxonomy values to the colnames of the metannotate table
+TAXONOMY_NAMING <- tibble::tibble(taxonomy = c("domain", "phylum", "class", "order", "family", "genus", "species"),
+                                  metannotate_colnames = c("Closest.Homolog.Superkingdom", "Closest.Homolog.Phylum",
+                                                           "Closest.Homolog.Class", "Closest.Homolog.Order",
+                                                           "Closest.Homolog.Family", "Closest.Homolog.Genus",
+                                                           "Closest.Homolog.Species"))
 
 #' Loads MetAnnotate data table
 #' 
 #' @param metannotate_table_filename filepath to the metannotate table (TSV format; can be compressed)
 #' @return tibble of metannotate data
 #' @export
-read_metannotate_tibble <- function(metannotate_table_filename) {
+read_metannotate_data <- function(metannotate_table_filename) {
   
   # Load the data
   metannotate_data <- read.table(metannotate_table_filename, sep = "\t", header = TRUE, 
-                                comment.char = "", quote = "", stringsAsFactors = FALSE) %>%
+                                comment.char = "", stringsAsFactors = FALSE) %>%
     tibble::as_tibble()
   
   return(metannotate_data)
 }
 
 #' Creates templates for user-specified HMM.Family and Dataset naming data
-#' 
+#'
 #' @param metannotate_data Tibble of metannotate data
-#' @param write_tables Logical; write the tables to files 'hmm_info_template.tsv' and 'dataset_info_template.tsv'?
+#' @param write_tables Logical; write the tables to file?
+#' @param hmm_info_filename File to optionally write HMM information to
+#' @param dataset_info_filename File to optionally write dataset information to
 #' @return List of two tibbles: hmm_info and dataset_info; user can fill these out
-#' @export
-create_setup_templates <- function(metannotate_data, write_tables = FALSE) {
+create_setup_templates <- function(metannotate_data, write_tables = FALSE,
+                                   hmm_info_filename = "hmm_info_template.tsv",
+                                   dataset_info_filename = "dataset_info_template.tsv") {
   # Make template for HMM naming
   # Columns will be: c("HMM.Family", "raw_name", "HMM_length", "notes")
-  hmm_info <- tibble::tibble(raw_name = unique(metannotate_data$HMM.Family))
-  hmm_info <- tibble::add_column(hmm_info, HMM.Family = "", HMM_length = "", notes = "")
+  hmm_info <- tibble::tibble(raw_name = unique(metannotate_data$HMM.Family),
+                             HMM.Family = "", HMM_length = "", notes = "")
   
   if (write_tables == TRUE) {
-    hmm_info_filename <- "hmm_info_template.tsv"
-    write.table(hmm_info, file = hmm_info_filename, sep = "\t", row.names = F, col.names = T)
+    write.table(hmm_info, file = hmm_info_filename, sep = "\t",
+                row.names = FALSE, col.names = TRUE, quote = FALSE)
   }
     
   # Make template for sample naming
-  dataset_info <- tibble::tibble(raw_name = unique(metannotate_data$Dataset))
-  dataset_info <- tibble::add_column(dataset_info, Dataset = "")
-  
+  # Columns will be: c("raw_name", "Dataset")
+  dataset_info <- tibble::tibble(raw_name = unique(metannotate_data$Dataset),
+                                 Dataset = "")
+
   if (write_tables == TRUE) {
-    dataset_info_filename <- "dataset_info_template.tsv"
-    write.table(dataset_info, file = dataset_info_filename, sep = "\t", row.names = F, col.names = T)
+    write.table(dataset_info, file = dataset_info_filename, sep = "\t",
+                row.names = FALSE, col.names = TRUE, quote = FALSE)
   }
   
   output_list <- list(hmm_info, dataset_info)
@@ -63,9 +75,10 @@ create_setup_templates <- function(metannotate_data, write_tables = FALSE) {
   return(output_list)
 }
 
-#' Applies user-provided HMM.Family/Dataset naming/length information onto the metannotate data
+#' Map user information onto metannotate data
 #' 
-#' @description A few interesting quirks about this function:
+#' @description Applies user-provided HMM.Family/Dataset naming/length information onto the metannotate data.
+#' A few interesting quirks about this function:
 #' - The order of the elements in the provided tables is meaningful. It determines the order of the factor for HMM
 #'   Dataset names. This dictates the order during plotting
 #' - You can give two elements the same plotting name (e.g., R1 and R2 reads). They will be merged together downstream.
@@ -76,17 +89,19 @@ create_setup_templates <- function(metannotate_data, write_tables = FALSE) {
 #' @param dataset_naming_info_filename Filepath to Dataset naming template exported from create_setup_templates()
 #' @return Tibble of metannotate data (renamed with factors)
 #' @export
-map_naming_information <- function(metannotate_data, hmm_naming_info_filename, dataset_naming_info_filename) {
+map_naming_information <- function(metannotate_data, hmm_naming_info_filename,
+                                   dataset_naming_info_filename) {
   
   # Read the data
-  hmm_info <- read.table(hmm_naming_info_filename, sep = "\t", header = TRUE, 
-                         stringsAsFactors = FALSE, comment.char = "", quote = "") %>%
+  hmm_info <- read.table(hmm_naming_info_filename, sep = "\t", header = TRUE,
+                         stringsAsFactors = FALSE, comment.char = "") %>%
     tibble::as_tibble()
+
   dataset_info <- read.table(dataset_naming_info_filename, sep = "\t", header = TRUE, 
-                             stringsAsFactors = FALSE, comment.char = "", quote = "") %>%
+                             stringsAsFactors = FALSE, comment.char = "") %>%
     tibble::as_tibble()
   
-  # Remove elements of the metannotate tablenot in the naming info tables
+  # Remove elements of the metannotate table not in the naming info tables
   metannotate_data <- dplyr::filter(metannotate_data, (HMM.Family %in% hmm_info$raw_name) &
                                       (Dataset %in% dataset_info$raw_name))
   
@@ -107,7 +122,6 @@ map_naming_information <- function(metannotate_data, hmm_naming_info_filename, d
   metannotate_data <- dplyr::left_join(metannotate_data, hmm_info, by = "HMM.Family")
   
   return(metannotate_data)
-  
 }
 
 
@@ -118,7 +132,6 @@ map_naming_information <- function(metannotate_data, hmm_naming_info_filename, d
 #' @param collapsed Logical (length 1) - has the table already been collapsed to a taxonomy rank?
 #' If TRUE, then the function will sum the "hits" column instead of a simple count.
 #' @return Tibble of summarized hit counts
-#' @export
 summarize_total_reads <- function(metannotate_data, gene = "rpoB", collapsed = FALSE) {
   # Filter down to gene of interest
   metannotate_summ <- dplyr::filter(metannotate_data, HMM.Family %in% gene)
@@ -144,31 +157,24 @@ summarize_total_reads <- function(metannotate_data, gene = "rpoB", collapsed = F
 #' Counts all HMM hits for all genes in the metannotate dataset
 #' 
 #' @param metannotate_data Tibble of metannotate data
-#' @param format Character vector (length 1) of either 'wide' or 'long' (reshape2 terminology) 
+#' @param format Character vector (length 1) of either 'wide' or 'long' (tidyr terminology)
 #' for the style of output table
 #' @param collapsed Logical (length 1) - has the table already been collapsed to a taxonomy rank?
 #' If TRUE, then the function will sum the "hits" column instead of a simple count.
 #' @return Tibble of summarized hit counts, wide format
-#' @export
 summarize_total_reads_all_genes <- function(metannotate_data, format = "wide", collapsed = FALSE) {
   
-  # Generate summary for each gene
+  # Generate summary for all genes
   gene_summaries <- lapply(unique(metannotate_data$HMM.Family), function(x) {
-    summarize_total_reads(metannotate_data, gene = x, collapsed = collapsed)
-  })
-  names(gene_summaries) <- unique(metannotate_data$HMM.Family)
-  
-  # Combine the data
-  gene_summaries_df <- dplyr::bind_rows(lapply(names(gene_summaries), function(x) {
-    gene_summary <- gene_summaries[[x]]
-    gene_summary <- tibble::add_column(gene_summary, gene = x)
-    return(gene_summary)
-  }))
-  
+    summarize_total_reads(metannotate_data, gene = x, collapsed = collapsed) %>%
+      tibble::add_column(gene = x)
+  }) %>%
+    dplyr::bind_rows()
+
   # If genes have been assigned a factor, then re-assign
-  if (is.factor(gene_summaries_df$gene) == TRUE) {
+  if (is.factor(metannotate_data$HMM.Family) == TRUE) {
     flog.debug("Re-assigning factors to output table")
-    gene_summaries_df$gene <- factor(gene_summaries_df$gene, levels = levels(metannotate_data$HMM.Family),
+    gene_summaries$gene <- factor(gene_summaries$gene, levels = levels(metannotate_data$HMM.Family),
                                      ordered = TRUE)
   }
   
@@ -176,20 +182,26 @@ summarize_total_reads_all_genes <- function(metannotate_data, format = "wide", c
   if (tolower(format) == "wide") {
     
     flog.debug("Returning wide-format data frame")
-    gene_summaries_df <- reshape2::dcast(gene_summaries_df, Dataset ~ gene, value.var = "hits")
-    return(gene_summaries_df)
+    gene_summaries <- gene_summaries %>%
+      tidyr::pivot_wider(names_from = gene, values_from = hits)
     
   } else if (tolower(format) == "long") {
-    
+
     flog.debug("Returning long-format data frame")
-    return(gene_summaries_df)
-    
+
+  } else {
+
+    stop(paste0("'format' must be either 'wide' or 'long', ",
+                "but you specified '", format, "'."))
+
   }
-  
+
+  return(gene_summaries)
 }
 
-#' Filters the hits to the desired e-value cutoff
-#' 
+#' Filter metannotate data by e-value
+#'
+#' @description Filters the hits to the desired e-value cutoff and reports stats
 #' @param metannotate_data Tibble of metannotate data
 #' @param evalue Numeric vector of the evalue cutoff
 #' @return List of two:
@@ -235,32 +247,29 @@ collapse_metannotate_table_by_taxon <- function(metannotate_data, taxon = "Famil
   # [7] "X.id.of.Closest.Homolog"      "Closest.Homolog.Species"      "Closest.Homolog.Genus"       
   # [10] "Closest.Homolog.Family"       "Closest.Homolog.Order"        "Closest.Homolog.Class"       
   # [13] "Closest.Homolog.Phylum"       "Closest.Homolog.Superkingdom" "HMM_length"   
-  
-  # HARD-CODED table relating canonical taxonomy values to the colnames of the metannotate table
-  taxonomy_naming <- tibble::tibble(taxonomy = c("domain", "phylum", "class", "order", "family", "genus", "species"),
-                                    metannotate_colnames = c("Closest.Homolog.Superkingdom", "Closest.Homolog.Phylum",
-                                                             "Closest.Homolog.Class", "Closest.Homolog.Order", "Closest.Homolog.Family", 
-                                                             "Closest.Homolog.Genus", "Closest.Homolog.Species"))
-  
-  # Convert user input into a metannotate-friendly name. Also get number code.
-  taxon_metannotate <- taxonomy_naming$metannotate_colnames[taxonomy_naming$taxonomy %in% tolower(taxon)]
-  taxon_number <- match(x = tolower(taxon), table = taxonomy_naming$taxonomy)
-  
-  # Determine the taxonomy columsn to keep while summarizing (should be everything above the chosen rank)
-  # We know that the metannotate taxonomy columns run in reverse order from columns 8-14 (see above)
-  taxon_colnum_metannotate <- (7 - taxon_number) + 8
-  taxon_colnum_series <- rev(taxon_colnum_metannotate:14)
-  
+
+  # Check if user-supplied taxonomy is correct
+  if ((tolower(taxon) %in% dplyr::pull(TAXONOMY_NAMING, taxonomy)) == FALSE) {
+    stop(paste0("Taxon must be a standard seven-rank taxonomy entry; you provided '",
+                taxon, "'."))
+  }
+
+  # Determine the taxonomy columns to keep while summarizing (should be everything above the chosen rank)
+  taxon_number <- match(x = tolower(taxon), table = TAXONOMY_NAMING$taxonomy)
+  metannotate_taxa_to_keep <- TAXONOMY_NAMING$metannotate_colnames[1:taxon_number]
+  colnames_to_keep <- append(c("Dataset", "HMM.Family", "HMM_length"),
+                             metannotate_taxa_to_keep)
+
   # Summarize the table, keeping all taxonomic ranks above the desired cutoff
-  metannotate_summ <- dplyr::group_by_at(metannotate_data, c(1,2,15,taxon_colnum_series))
-  metannotate_summ <- dplyr::summarise(metannotate_summ, hits = n())
+  metannotate_summ <- dplyr::group_by_at(metannotate_data, colnames_to_keep) %>%
+    dplyr::summarise(hits = n())
   
   return(metannotate_summ)
-  
 }
 
-#' Double-normlizes metannotate data by HMM length and a single-copy gene marker
-#' 
+#' Normalize metannotate data
+#'
+#' @description Double-normlizes metannotate data by HMM length and a single-copy gene marker
 #' @param metannotate_data_collapsed Tibble of taxonomy-collapsed metannotate data - see collapse_metannotate_table_by_taxon()
 #' @param normalizing_HMM Character vector (length 1) giving the plotting name of an HMM.Family in your table
 #' that you want to normalize all genes within each sample to. This should be a reliable single-copy taxonomic marker gene, 
@@ -280,8 +289,8 @@ normalize_collapsed_metannotate_data <- function(metannotate_data_collapsed, nor
   total_hits <- summarize_total_reads_all_genes(metannotate_data_collapsed, format = "wide", collapsed = TRUE)
   
   # Join the normalizing HMM column onto the main table
-  total_hits_join <- dplyr::select(total_hits, Dataset, normalizing_HMM)
-  total_hits_join <- dplyr::rename(total_hits_join, normalizing_HMM_total_hits = normalizing_HMM)
+  total_hits_join <- dplyr::select(total_hits, Dataset, all_of(normalizing_HMM)) %>%
+    dplyr::rename(normalizing_HMM_total_hits = normalizing_HMM)
   metannotate_data_collapsed <- dplyr::left_join(metannotate_data_collapsed, total_hits_join, by = "Dataset")
   total_hits_join <- NULL
   
@@ -290,22 +299,24 @@ normalize_collapsed_metannotate_data <- function(metannotate_data_collapsed, nor
     metannotate_data_collapsed$normalizing_HMM_total_hits * 100
   
   ### Clean up the output
-  metannotate_data_collapsed <- dplyr::ungroup(metannotate_data_collapsed)
-  metannotate_data_collapsed <- dplyr::select(metannotate_data_collapsed, -HMM_length, -normalizing_HMM_total_hits)
-  metannotate_data_collapsed <- dplyr::rename(metannotate_data_collapsed, percent_abundance = hits)
+  metannotate_data_collapsed <- dplyr::ungroup(metannotate_data_collapsed) %>%
+    dplyr::select(-HMM_length, -normalizing_HMM_total_hits) %>%
+    dplyr::rename(percent_abundance = hits)
   
   ### Collect overall summary stats for the normalization
-  total_hits_normalized <- dplyr::select(total_hits, -Dataset) / dplyr::pull(total_hits, normalizing_HMM) * 100
-  total_hits_normalized <- tibble::add_column(total_hits_normalized, Dataset = total_hits$Dataset, .before = 1)
+  total_hits_normalized <- (dplyr::select(total_hits, -Dataset) /
+    dplyr::pull(total_hits, normalizing_HMM) * 100) %>%
+    tibble::add_column(Dataset = dplyr::pull(total_hits, Dataset), .before = 1)
   
   output_list <- list(metannotate_data_collapsed, total_hits_normalized)
   names(output_list) <- c("metannotate_data_normalized", "total_normalized_hits")
+
   return(output_list)
-  
 }
 
-#' Subsets normalized metannotate data to some desired threshold of most abundance organisms
-#' 
+#' Subset high-abundance taxa from metannotate data
+#'
+#' @description Subsets normalized metannotate data to some desired threshold of most abundance organisms
 #' @param metannotate_data_normalized Tibble of normalized metannotate data - see normalize_collapsed_metannotate_data()
 #' @param top_x Numeric vector (length 1) giving the subsetting amount you desire.
 #' If top_x >=1, the script will return the "top_x most abundant taxa" for each Dataset/HMM.Family
@@ -322,25 +333,25 @@ normalize_collapsed_metannotate_data <- function(metannotate_data_collapsed, nor
 subset_normalized_metannotate_data <- function(metannotate_data_normalized, top_x, percent_mode = "within_sample") {
   # Parse the top_x value to determine what the user wants
   if (top_x >= 1) {
-    flog.info(glue::glue("Subsetting to the top ", top_x, " most abundant taxa per sample"))
+    flog.info(paste0("Subsetting to the top ", top_x, " most abundant taxa per sample"))
     
-    metannotate_data_summ <- dplyr::group_by(metannotate_data_normalized, Dataset, HMM.Family)
-    metannotate_data_summ <- dplyr::top_n(metannotate_data_summ, n = top_x, wt = percent_abundance)
+    metannotate_data_summ <- dplyr::group_by(metannotate_data_normalized, Dataset, HMM.Family) %>%
+      dplyr::top_n(n = top_x, wt = percent_abundance)
     
   } else if (top_x < 1 && top_x > 0) {
     if (percent_mode == "within_sample") {
-      flog.info(glue::glue("Subsetting all taxa of at least ", top_x * 100, "% normalized relative abundance"))
+      flog.info(paste0("Subsetting all taxa of at least ", top_x * 100, "% normalized relative abundance"))
       
       metannotate_data_summ <- dplyr::filter(metannotate_data_normalized, percent_abundance >= (top_x * 100))
       
     } else if (percent_mode == "within_HMM") {
-      flog.info(glue::glue("Subsetting all taxa of at least ", top_x * 100, "% relative abundance per HMM"))
+      flog.info(paste0("Subsetting all taxa of at least ", top_x * 100, "% relative abundance per HMM"))
       
-      # Re-calculate the total hits for each HMM (scripts have to be coerced a bit to work here)
-      metannotate_data_normalized <- dplyr::rename(metannotate_data_normalized, hits = percent_abundance)
-      total_hits <- summarize_total_reads_all_genes(metannotate_data_normalized, format = "long", collapsed = TRUE)
-      metannotate_data_normalized <- dplyr::rename(metannotate_data_normalized, percent_abundance = hits)
-      total_hits <- dplyr::rename(total_hits, HMM.Family = gene, total_percent_abundance_within_HMM = hits)
+      # Re-calculate the total hits for each HMM
+      # TODO - generalize the summary function so I don't have to rename so many columns here
+      total_hits <- dplyr::rename(metannotate_data_normalized, hits = percent_abundance) %>%
+        summarize_total_reads_all_genes(format = "long", collapsed = TRUE) %>%
+        dplyr::rename(HMM.Family = gene, total_percent_abundance_within_HMM = hits)
       
       # Calculate the relative % contribution that the HMM makes to its own total counts
       metannotate_data_normalized <- dplyr::left_join(metannotate_data_normalized, total_hits, 
@@ -369,13 +380,13 @@ subset_normalized_metannotate_data <- function(metannotate_data_normalized, top_
 #' @export
 choose_discrete_colour_scale <- function(number_of_entries) {
   
-  flog.debug(glue::glue("Generating ", number_of_entries, " colours"))
+  flog.debug(paste0("Generating ", number_of_entries, " colours"))
   
   # Choose the best colour scale based on the number of entries to be plotted
   if ( number_of_entries == 1 ) {
     colour_palette <- "#000000"
   } else if ( number_of_entries == 2 ) {
-    colour_palette <- RColorBrewer::brewer.pal(n = 3, name = "Dark2")[c(1:2)]
+    colour_palette <- RColorBrewer::brewer.pal(n = 3, name = "Dark2")[1:2]
   } else if ( number_of_entries <= 8 ) {
     colour_palette <- RColorBrewer::brewer.pal(n = number_of_entries, name = "Dark2")
   } else if ( number_of_entries <= 12 ) {
@@ -383,33 +394,32 @@ choose_discrete_colour_scale <- function(number_of_entries) {
   } else if ( number_of_entries > 12 ) {
     colour_palette <- scales::hue_pal(h = c(20,290))(number_of_entries)
   } else {
-    stop("Something is wrong with the number_of_entries ('", number_of_entries, "'). Is it non-numeric? Exiting...")
+    stop("Something is wrong with the number_of_entries ('", number_of_entries, "'). Is it non-numeric?")
   }
   
   return(colour_palette)
-  
 }
 
 #' Generates colour for a metannotate barplot
 #' 
 #' @param metannotate_data_normalized Tibble of normalized metannotate data - see normalize_collapsed_metannotate_data()
 #' @return a tibble of unique taxa with HTML colour codes in the 'colour' column
-#' @export
 generate_plotting_colours <- function(metannotate_data_normalized) {
   
-  metannotate_data_normalized <- dplyr::ungroup(metannotate_data_normalized)
+  plotting_colour_data <- dplyr::ungroup(metannotate_data_normalized) %>%
+    dplyr::select(-percent_abundance, -Dataset, -HMM.Family) %>%
+    unique() %>%
+    dplyr::arrange_all() # Sort by domain, phylum, and so on (in that order)
+
+  # Pull the lowest taxon rank
+  # TODO - confirm somehow that the lowest taxon rank is actually the last column as this assumes.
+  unique_taxa <- dplyr::pull(plotting_colour_data, ncol(plotting_colour_data))
   
-  plotting_colours <- unique(dplyr::select(metannotate_data_normalized, -percent_abundance, -Dataset, -HMM.Family))
-  plotting_colours <- dplyr::arrange_all(plotting_colours) # Sort by domain, phylum, and so on (in that order)
+  flog.info(paste0("Generating automatic colour scheme for ", length(unique_taxa), " unique taxa"))
   
-  unique_taxa <- dplyr::pull(plotting_colours, ncol(plotting_colours))
-  # TODO confirm somehow that the lowest taxon rank is actually the last column as this assumes.
+  plotting_colour_data$colour <- choose_discrete_colour_scale(length(unique_taxa))
   
-  flog.info(glue::glue("Generating automatic colour scheme for ", length(unique_taxa), " unique taxa"))
-  
-  plotting_colours$colour <- choose_discrete_colour_scale(length(unique_taxa))
-  
-  return(plotting_colours)
+  return(plotting_colour_data)
 }
 
 #' Generates colour for a metannotate barplot or loads user-defined colours
@@ -420,54 +430,85 @@ generate_plotting_colours <- function(metannotate_data_normalized) {
 #' If the file does not exist, then this function will write a template to that file
 #' If 'NA' is entered, then the function will auto-generate colours and continue on
 #' @return a tibble of unique taxa with HTML colour codes in the 'colour' column
-#' @export
 process_plotting_colours <- function(metannotate_data_normalized, colouring_template_filename = NA) {
   
   if (is.na(colouring_template_filename) == TRUE) {
     
-    plotting_colours <- generate_plotting_colours(metannotate_data_normalized)
+    plotting_colour_data <- generate_plotting_colours(metannotate_data_normalized)
     
   } else if (file.exists(colouring_template_filename) == FALSE) {
     
-    plotting_colours <- generate_plotting_colours(metannotate_data_normalized)
+    plotting_colour_data <- generate_plotting_colours(metannotate_data_normalized)
     
-    flog.info(glue::glue("Saving plot colour template to '", colouring_template_filename, "'"))
-    write.table(plotting_colours, colouring_template_filename, sep = "\t", row.names = FALSE,
-                col.names = TRUE)
+    flog.info(paste0("Saving plot colour template to '", colouring_template_filename, "'"))
+    write.table(plotting_colour_data, colouring_template_filename, sep = "\t", row.names = FALSE,
+                col.names = TRUE, quote = FALSE)
     
   } else if (file.exists(colouring_template_filename) == TRUE) {
-    flog.info(glue::glue("Loading plot colour template from '", colouring_template_filename, "'"))
-    
-    plotting_colours <- read.table(colouring_template_filename, sep = "\t", header = TRUE, 
+    flog.info(paste0("Loading plot colour template from '", colouring_template_filename, "'"))
+
+    # TODO - run code to check that the input table's format is as expected
+    plotting_colour_data <- read.table(colouring_template_filename, sep = "\t", header = TRUE,
                                    comment.char = "", stringsAsFactors = FALSE) %>%
       tibble::as_tibble()
     
   }
   
-  return(plotting_colours)
-  
+  return(plotting_colour_data)
 }
 
-
-metannotate_ggplot <- function(metannotate_data_normalized, type = "bar", plotting_colours, 
-                               collapse_taxonomy_metannotate, hit_totals, normalizing_HMM,
+#' Generate a ggplot of the MetAnnotate data
+#'
+#' @description Generates the ggplot of MetAnnotate data
+#' @param metannotate_data_normalized Tibble of normalized metannotate data - see normalize_collapsed_metannotate_data()
+#' @param hit_totals Tibble of total normalized hits per HMM/sample
+#' This is generated in normalize_collapsed_metannotate_data()
+#' @param plotting_colour_data Tibble of plot colours generated by process_plotting_colours()
+#' @param plotting_taxon The taxonomy rank to summarize bars/bubbles to; MUST MATCH the collapse taxon of the MetAnnotate table
+#' @param normalizing_HMM the name of the normalizing HMM (e.g., 'rpoB')
+#' @param plot_type Either 'bar' or 'bubble'
+#' @param space ggplot setting; 'fixed' or 'free'
+#' @param bubble_size_range numeric vector of length two with the small and large bubble sizes
+#' @param alpha ggplot value; transparency (for bubble plots)
+#' @param bubble_labels logical; show percent labels on the bubbles for bubble plots?
+#' @return A ggplot of MetAnnotate data
+#' @export
+metannotate_ggplot <- function(metannotate_data_normalized, hit_totals, plotting_colour_data,
+                               plotting_taxon, normalizing_HMM, plot_type = "bar",
                                space = "free", bubble_size_range = c(1,20), alpha = 0.8,
                                bubble_labels = TRUE) {
-  
-  if (type == "bubble") {
-    metannotate_data_normalized$label <- round(x = metannotate_data_normalized$percent_abundance, digits = 1)
+
+  # Check taxon rank
+  if ((tolower(plotting_taxon) %in% dplyr::pull(TAXONOMY_NAMING, taxonomy)) == FALSE) {
+    stop(paste0("Taxon must be a standard seven-rank taxonomy entry; you provided '", taxon, "'."))
+  }
+  plotting_taxon_colname <- TAXONOMY_NAMING$metannotate_colnames[match(tolower(plotting_taxon),
+                                                                       TAXONOMY_NAMING$taxonomy)]
+  plotting_taxon_label <- paste0(substring(plotting_taxon, 1, 1) %>% toupper(),
+                                 substring(plotting_taxon, 2, nchar(plotting_taxon)))
+
+  # TODO - can this be moved down to the 'bubble' area without breaking anything?
+  if (plot_type == "bubble") {
+    metannotate_data_normalized$label <- round(metannotate_data_normalized$percent_abundance, digits = 1)
   }
   
   # Make the base plot
   metannotate_plot <- ggplot(metannotate_data_normalized) +
     theme_bw() +
-    theme(axis.title = element_text(size = 12), axis.text = element_text(size = 10, colour = "black"),
-          strip.text = element_text(size = 11, face = "italic"), strip.background = element_rect(fill = "#e6e6e6"),
+    # TODO - expose some theme elements to user or make fonts scalable automatically
+    theme(axis.title = element_text(size = 12),
+          strip.text = element_text(size = 11, face = "italic"),
+          strip.background = element_rect(fill = "#e6e6e6"),
+          axis.text = element_text(size = 10, colour = "black"),
           axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
-          axis.ticks = element_line(size = 0.5, colour = "black"), axis.line = element_line(size = 0.5),
-          legend.text = element_text(size = 10, face = "italic"), legend.title = element_text(size = 8),
-          legend.key = element_rect(colour = "transparent"), legend.key.size = unit(6, "mm"),
-          legend.spacing = unit(1, "mm"), legend.box.just = "left") +
+          axis.ticks = element_line(size = 0.5, colour = "black"),
+          axis.line = element_line(size = 0.5),
+          legend.text = element_text(size = 10, face = "italic"),
+          legend.title = element_text(size = 8),
+          legend.key = element_rect(colour = "transparent"),
+          legend.key.size = unit(6, "mm"),
+          legend.spacing = unit(1, "mm"),
+          legend.box.just = "left") +
     xlab("Sample")
   
   if (space == "fixed") {
@@ -477,132 +518,198 @@ metannotate_ggplot <- function(metannotate_data_normalized, type = "bar", plotti
     metannotate_plot <- metannotate_plot +
       facet_grid(HMM.Family ~ ., scales = "free", space = "free")
   } else {
-    flog.error(glue::glue("'space' must be either 'free' or 'fixed'. You provided ", space, ". Exiting..."))
-    quit(save = "no", status = 1)
+    stop(paste0("'space' must be either 'free' or 'fixed'. You provided '", space, "'."))
   }
   
-  if (type == "bar") {
+  if (plot_type == "bar") {
     flog.debug("Generating barplot")
-    
+
     metannotate_plot <- metannotate_plot +
       geom_bar(data = hit_totals, aes(x = Dataset, weight = percent_abundance), fill = "#808080") +
-      geom_bar(aes_string(x = "Dataset", weight = "percent_abundance", 
-                                                   fill = collapse_taxonomy_metannotate)) +
-      scale_fill_manual(values = plotting_colours$colour) +
-      theme(panel.grid = element_blank(), panel.border = element_rect(colour = "transparent"), 
+      geom_bar(aes_string(x = "Dataset", weight = "percent_abundance",
+                          fill = plotting_taxon_colname)) +
+      scale_fill_manual(values = plotting_colour_data$colour) +
+      theme(panel.grid = element_blank(),
+            panel.border = element_rect(colour = "transparent"),
             panel.spacing.y = unit(3, "mm")) +
       guides(fill = guide_legend(ncol = 1, title = element_blank())) +
-      ylab(paste("Gene hits relative to ", normalizing_HMM, " (%; normalized)", sep = ""))
+      ylab(paste0("Gene hits relative to ", normalizing_HMM, " (%; normalized)"))
     
-  } else if (type == "bubble") {
+  } else if (plot_type == "bubble") {
     flog.debug("Generating bubble plot")
-    
+
+    # TODO - allow user to toggle which taxon rank to use
+    legend_taxon_colname <- "Closest.Homolog.Phylum"
+    legend_taxon <- "Phylum"
+    fill_colours <- dplyr::pull(metannotate_data_normalized, legend_taxon_colname) %>%
+        unique() %>%
+        length() %>%
+        choose_discrete_colour_scale()
+
     metannotate_plot <- metannotate_plot +
-      geom_point(aes_string(x = "Dataset", y = collapse_taxonomy_metannotate,
-                            size = "percent_abundance", fill = "Closest.Homolog.Phylum"), shape = 21,
-                 alpha = alpha) +
+      geom_point(aes_string(x = "Dataset", y = plotting_taxon_colname,
+                            size = "percent_abundance", fill = legend_taxon_colname),
+                 shape = 21, alpha = alpha) +
       scale_size_continuous(range = bubble_size_range) +
-      scale_fill_manual(values = 
-                          choose_discrete_colour_scale(length(unique(
-                            dplyr::pull(metannotate_data_normalized, Closest.Homolog.Phylum))))) +
+      scale_fill_manual(values = fill_colours) +
       theme(axis.text.y = element_text(size = 5, face = "italic")) +
-      guides(fill = guide_legend(title = "Phylum")) +
-      ylab(paste(strsplit(collapse_taxonomy_metannotate, split = ".", fixed = TRUE)[[1]][3],
-                 " of closest homologue", sep = ""))
+      guides(fill = guide_legend(title = legend_taxon)) +
+      ylab(paste0(plotting_taxon_label, " of closest homologue"))
     
     if (bubble_labels == TRUE) {
       metannotate_plot <- metannotate_plot +
-        geom_text(aes_string(x = "Dataset", y = collapse_taxonomy_metannotate, label = "label"),
+        geom_text(aes_string(x = "Dataset", y = plotting_taxon_colname, label = "label"),
                   size = 2) +
         guides(size = FALSE)
     } else if (bubble_labels == FALSE) {
       metannotate_plot <- metannotate_plot +
-        guides(size = guide_legend(title = paste("Gene hits relative to \n", normalizing_HMM, 
-                                                 " (%; normalized)", sep = ""), 
+        guides(size = guide_legend(title = paste0("Gene hits relative to \n", normalizing_HMM, " (%; normalized)"),
                                    override.aes = list(fill = "#4d4d4d")))
     }
     
+  } else {
+
+    stop(paste0("'plot_type' must be either 'bar' or 'bubble'; ",
+                "you provided '", plot_type, "'."))
+
   }
   
   return(metannotate_plot)
-  
 }
 
-metannotate_plotter <- function(metannotate_data_normalized_list, type = "bar", top_x = NA, highlight_taxon = NA,
-                                colouring_template_filename = NA, percent_mode = "within_sample",
-                                space = "free", bubble_size_range = c(1,20), alpha = 0.8,
-                                bubble_labels = TRUE) {
+#' Wrapper for convenient generation of MetAnnotate ggplot data
+#'
+#' @description Wrapper to generate a ggplot of MetAnnotate data with subset, colours, labels, and so on
+#' @param metannotate_data_normalized_list List output of normalize_collapsed_metannotate_data()
+#' @param colouring_template_filename Filename of the colouring template you want to load
+#' If the file does not exist, then this function will write a template to that file
+#' If 'NA' is entered, then the function will auto-generate colours and continue on
+#' @param top_x Numeric vector (length 1) giving the subsetting amount you desire.
+#' If top_x >=1, the script will return the "top_x most abundant taxa" for each Dataset/HMM.Family
+#' If top_x <1, the script will return "all taxa of (top_x * 100%) abundance or greater for each Dataset/HMM.Family - but see below.
+#' @param percent_mode If top_x <1, there are two different methods for keeping the most abundant organisms:
+#' - "within_sample" -- the normalized % abundance relative to rpoB is used
+#' - "within_HMM" -- the percent abundance of that taxon within the specific HMM gene hits is used.
+#' You won't notice much of a different between these modes unless one of your HMMs has very few hits and you want to
+#' show some of the taxa that were hit. This would be a good time to use 'within_HMM'.
+#' @param normalizing_HMM Name of the normalizing HMM (e.g., 'rpoB')]; specify 'auto' to attempt auto-detection
+#' @param plot_normalizing_HMM Retain the normalizing_HMM in the final ggplot?
+#' @param ... Other fine-tuned plotting options controlled by metannotate_ggplot()
+#' @param dump_raw_data Return the normalized and subsetted table in lieu of a ggplot
+#' @return A ggplot of MetAnnotate data (or raw data; see above)
+#' @export
+metannotate_plotter <- function(metannotate_data_normalized_list, colouring_template_filename = NA,
+                                top_x = NA, percent_mode = "within_sample", normalizing_HMM = "auto",
+                                plot_normalizing_HMM = TRUE, dump_raw_data = FALSE, ...) {
   # # Example column names of the plotting table, if collapsed to family
   # [1] "Dataset"                      "HMM.Family"                   "Closest.Homolog.Superkingdom"
   # [4] "Closest.Homolog.Phylum"       "Closest.Homolog.Class"        "Closest.Homolog.Order"       
   # [7] "Closest.Homolog.Family"       "percent_abundance" 
-  
-  # HARD-CODED table relating canonical taxonomy values to the colnames of the metannotate table
-  taxonomy_naming <- tibble::tibble(taxonomy = c("domain", "phylum", "class", "order", "family", "genus", "species"),
-                                    metannotate_colnames = c("Closest.Homolog.Superkingdom", "Closest.Homolog.Phylum",
-                                                             "Closest.Homolog.Class", "Closest.Homolog.Order", "Closest.Homolog.Family", 
-                                                             "Closest.Homolog.Genus", "Closest.Homolog.Species"))
-  
+
   # Extract list components
   metannotate_data <- metannotate_data_normalized_list$metannotate_data_normalized
-  hit_totals_wide <- metannotate_data_normalized_list$total_normalized_hits
-  hit_totals <- reshape2::melt(metannotate_data_normalized_list$total_normalized_hits, id.vars = "Dataset",
-                               variable.name = "HMM.Family", value.name = "percent_abundance")
+  hit_totals <- tidyr::pivot_longer(metannotate_data_normalized_list$total_normalized_hits, -Dataset,
+                                    names_to = "HMM.Family", values_to = "percent_abundance")
   hit_totals$HMM.Family <- factor(hit_totals$HMM.Family, levels = unique(hit_totals$HMM.Family), ordered = TRUE)
   
   # Detect the taxonomy that the data has been collapsed to
-  collapse_taxonomy_metannotate <- tail(taxonomy_naming$metannotate_colnames[
-    taxonomy_naming$metannotate_colnames %in% colnames(metannotate_data)], n = 1)
-  collapse_taxonomy <- taxonomy_naming$taxonomy[
-    match(x = collapse_taxonomy_metannotate, table = taxonomy_naming$metannotate_colnames)]
-  flog.debug(glue::glue("Plotting input dataframe has been collapsed to the '", collapse_taxonomy, "' level."))
+  plotting_taxon_colname <- TAXONOMY_NAMING$metannotate_colnames[
+    TAXONOMY_NAMING$metannotate_colnames %in% colnames(metannotate_data)] %>%
+    tail(n = 1)
+  plotting_taxon <- TAXONOMY_NAMING$taxonomy[match(plotting_taxon_colname,
+                                                   TAXONOMY_NAMING$metannotate_colnames)]
+  flog.debug(paste0("Plotting input dataframe has been collapsed to the '", plotting_taxon, "' level."))
   
   # Subset to the desired top_x cutoff
+  # TODO - longer-term move subsetting out of this script for clarity
   metannotate_data <- subset_normalized_metannotate_data(metannotate_data, top_x, percent_mode = percent_mode)
-  
-  # Optionally subset to a specific taxon
-  ########
-  
-  # Make or read in a plotting colour table; or generate auto-colours
-  plotting_colours <- process_plotting_colours(metannotate_data, colouring_template_filename)
-  
-  # Make the plotting column into an ordered factor based on the plotting_colours order
-  metannotate_data[,collapse_taxonomy_metannotate] <- factor(dplyr::pull(metannotate_data, collapse_taxonomy_metannotate),
-                                                             levels = unique(dplyr::pull(plotting_colours, collapse_taxonomy_metannotate)),
-                                                             ordered = TRUE)
-  
+
   # Determine normalizing HMM for labelling on the plot
-  normalizing_HMM <- colnames(hit_totals_wide)[
-    match(100, unlist(lapply(2:ncol(hit_totals_wide), function(x) { mean(hit_totals_wide[,x]) }))) + 1 ]
+  if (normalizing_HMM == "auto") {
+    normalizing_HMM  <- dplyr::group_by(hit_totals, HMM.Family) %>%
+      dplyr::summarise(mean_abund = mean(percent_abundance)) %>%
+      dplyr::filter(mean_abund == 100) %>%
+      dplyr::pull(HMM.Family)
+
+    if (length(normalizing_HMM) != 1) {
+      stop("Auto-detection of the normalizing_HMM failed; you'll have to specify it manually.")
+    }
+  }
+
+  # Remove normalizing_HMM from the hit totals to avoid plotting an extraneous bar at 100%
   hit_totals <- dplyr::filter(hit_totals, HMM.Family != normalizing_HMM)
-  
-  flog.info("Creating the ggplot")
-  metannotate_plot <- metannotate_ggplot(metannotate_data, type = type, plotting_colours, 
-                                         collapse_taxonomy_metannotate, hit_totals, normalizing_HMM,
-                                         space, bubble_size_range, alpha = alpha,
-                                         bubble_labels = bubble_labels)
-  
+
+  # Optionally remove the normalizing HMM from the final plot altogether
+  if (plot_normalizing_HMM == FALSE) {
+    metannotate_data <- dplyr::filter(metannotate_data, HMM.Family != normalizing_HMM)
+  } else if (plot_normalizing_HMM != TRUE) {
+    stop(paste0("'plot_normalizing_HMM' must be either TRUE or FALSE; you specified '",
+                      plot_normalizing_HMM, "'."))
+  }
+
+  # Make or read in a plotting colour table; or generate auto-colours
+  plotting_colour_data <- process_plotting_colours(metannotate_data, colouring_template_filename)
+
+  # Make the plotting column into an ordered factor based on the plotting_colours order
+  metannotate_data[,plotting_taxon_colname] <- factor(dplyr::pull(metannotate_data, plotting_taxon_colname),
+                                                      levels = unique(dplyr::pull(plotting_colour_data,
+                                                                                  plotting_taxon_colname)),
+                                                      ordered = TRUE)
+
+  if (dump_raw_data == TRUE) {
+    # TODO - this is bad design; function should not output something totally different given a flag...
+    flog.info("Dumping raw data in lieu of a ggplot")
+    metannotate_plot <- metannotate_data
+
+  } else {
+    flog.info("Creating the ggplot")
+    metannotate_plot <- metannotate_ggplot(metannotate_data_normalized = metannotate_data,
+                                           hit_totals = hit_totals,
+                                           plotting_colour_data = plotting_colour_data,
+                                           plotting_taxon = plotting_taxon,
+                                           normalizing_HMM = normalizing_HMM,
+                                           ...)
+  }
+
   return(metannotate_plot)
-  
 }
 
-
-explore_metannotate_data <- function(metannotate_data_renamed, evalue = 1e-10, taxon = "Family",
-                                     normalizing_HMM = "rpoB", plot_type = "bar", top_x = 0.02,
-                                     colouring_template_filename = NA, percent_mode = "within_sample",
-                                     space = "free", bubble_size_range = c(1,40), alpha = 0.8,
-                                     bubble_labels = TRUE) {
+#' Explore MetAnnotate data
+#'
+#' @description high-level exploration function for examining MetAnnotate data
+#' @param metannotate_data_mapped The tibble output by map_naming_information()
+#' @param evalue E-value cutoff for HMM hits
+#' @param taxon Character vector (length 1) giving the taxon name to collapse to
+#' Can be: domain, phylum, class, order, family, genus, species (case insensitive)
+#' @param normalizing_HMM Name of the normalizing HMM (e.g., 'rpoB')]; specify 'auto' to attempt auto-detection
+#' @param top_x Numeric vector (length 1) giving the subsetting amount you desire.
+#' If top_x >=1, the script will return the "top_x most abundant taxa" for each Dataset/HMM.Family
+#' If top_x <1, the script will return "all taxa of (top_x * 100%) abundance or greater for each Dataset/HMM.Family - but see below.
+#' @param percent_mode If top_x <1, there are two different methods for keeping the most abundant organisms:
+#' - "within_sample" -- the normalized % abundance relative to rpoB is used
+#' - "within_HMM" -- the percent abundance of that taxon within the specific HMM gene hits is used.
+#' You won't notice much of a different between these modes unless one of your HMMs has very few hits and you want to
+#' show some of the taxa that were hit. This would be a good time to use 'within_HMM'.
+#' @param colouring_template_filename Filename of the colouring template you want to load
+#' If the file does not exist, then this function will write a template to that file
+#' If 'NA' is entered, then the function will auto-generate colours and continue on
+#' #' @param ... Other fine-tuned plotting options controlled by metannotate_plotter()
+#' @return A ggplot of MetAnnotate data
+#' @export
+explore_metannotate_data <- function(metannotate_data_mapped, evalue = 1e-10, taxon = "Family",
+                                     normalizing_HMM = "rpoB", top_x = 0.02, percent_mode = "within_sample",
+                                     colouring_template_filename = NA, ...) {
   
   # Filter by e-value cutoff and report stats to user
-  flog.info(glue::glue("Filtering by e-value cutoff of ", evalue))
-  metannotate_data_filtered <- filter_by_evalue(metannotate_data_renamed, evalue = evalue)
+  flog.info(paste0("Filtering by e-value cutoff of ", evalue))
+  metannotate_data_filtered <- filter_by_evalue(metannotate_data_mapped, evalue = evalue)
   metannotate_data <- metannotate_data_filtered$metannotate_data
-  flog.info(glue::glue("Percent change from e-value filtration:"))
+  flog.info("Percent change from e-value filtration:")
   print(metannotate_data_filtered$read_counts$percent_change)
-  # TODO - output the info to the user as a file
+  # TODO - optionally output the info to the user
   
   # Collapse the table to the desired taxonomic rank
-  flog.info(glue::glue("Collapsing table to taxonomic rank '", taxon, "'"))
+  flog.info(paste0("Collapsing table to taxonomic rank '", taxon, "'"))
   metannotate_data_collapsed <- collapse_metannotate_table_by_taxon(metannotate_data, taxon = taxon)
   
   # Normalize the data by HMM length
@@ -614,27 +721,27 @@ explore_metannotate_data <- function(metannotate_data_renamed, evalue = 1e-10, t
   
   # Make plots
   flog.info("Plotting data")
-  metannotate_plot <- metannotate_plotter(metannotate_data_normalized_list, type = plot_type, top_x = top_x,
+  metannotate_plot <- metannotate_plotter(metannotate_data_normalized_list = metannotate_data_normalized_list,
                                           colouring_template_filename = colouring_template_filename,
-                                          percent_mode = percent_mode, space = space, 
-                                          bubble_size_range = bubble_size_range, alpha = alpha,
-                                          bubble_labels = bubble_labels)
-  
+                                          top_x = top_x,
+                                          percent_mode = percent_mode,
+                                          normalizing_HMM = normalizing_HMM,
+                                          ...)
+
   return(metannotate_plot)
-  
 }
 
 main <- function(params) {
   
   # Read data
   flog.info("Loading metannotate table (can take time)...")
-  metannotate_data <- read_metannotate_tibble(params$metannotate_table_filename)
+  metannotate_data <- read_metannotate_data(params$metannotate_table_filename)
   
   # Print raw HMM and sample names in template if desired
   if (params$setup == TRUE) {
     setup_templates <- create_setup_templates(metannotate_data, write_tables = TRUE)
-    flog.info(glue::glue("Wrote setup templates to 'hmm_info_template.tsv' and 'dataset_info_template.tsv. ",
-                         "Please fill these out and then use them as script inputs. Exiting..."))
+    flog.info(paste0("Wrote setup templates to 'hmm_info_template.tsv' and 'dataset_info_template.tsv. ",
+                         "Please fill these out and then use them as script inputs."))
     quit(save = "no", status = 0)
   }
   
@@ -644,7 +751,7 @@ main <- function(params) {
     flog.info("Loading user-provided HMM and dataset naming information")
     metannotate_data <- map_naming_information(metannotate_data, params$hmm_naming_info, params$dataset_naming_info)
   } else {
-    flog.fatal(glue::glue("Must provde hmm_naming_info and dataset_naming_info. Exiting..."))
+    flog.error("Must provde hmm_naming_info and dataset_naming_info.")
     quit(save = "no", status = 1)
   }
   
