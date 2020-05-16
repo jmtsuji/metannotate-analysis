@@ -44,6 +44,33 @@ its log file during the MetAnnotate run.
 
 From here, you can then analyze your data a number of different ways. The recommended workflow is below:
 
+### Short and sweet instructions
+A very brief summary of everything below:
+```R
+metannotate_table_filename <- "path_to_your_all_annotation_tsv_file"
+hmm_naming_info_filename <- "path_where_you_want_to_write_the_hmm_naming_file.tsv"
+dataset_naming_info_filename <- "path_where_you_want_to_write_the_dataset_naming_file.tsv"
+
+# Load your data
+metannotate_data <- read_metannotate_data(metannotate_table_filename)
+
+# Print the HMM/data setup template files; then fill them in manually
+setup_templates <- create_setup_templates(metannotate_data, write_tables = TRUE,
+                                          hmm_info_filename = hmm_naming_info_filename,
+                                          dataset_info_filename = dataset_naming_info_filename)
+
+# Map on the template info
+metannotate_data_mapped <- map_naming_information(metannotate_data, hmm_naming_info_filename, dataset_naming_info_filename)
+
+# Explore the data, tweaking settings until you're satisfied
+explore_metannotate_data(metannotate_data_mapped, evalue = 1e-10, taxon = "Family",
+                         normalizing_HMM = "rpoB", top_x = 0.02, percent_mode = "within_sample",
+                         colouring_template_filename = NA, plot_type = "bar")
+
+# Further beautify the plot with a colouring_template_filename if interested.
+```
+Step-by-step instructions with more detail are below.
+
 ### 1. Load the data
 ```R
 metannotate_table_filename <- "path_to_your_all_annotation_tsv_file"
@@ -194,6 +221,25 @@ make the plot look more beautiful, you can use the `colouring_template_filename`
 Play around with the script parameters until you are satisfied. Then, when you want to make a finalized plot, improve 
 plot colours and save to a PDF as described below.
 
+#### Barplots vs. bubble plots and beyond
+Note that you have access to additional options for fine control over your plot type and appearance. 
+Importantly, `plot_type` lets you choose between a `bar` or a `bubble` plot of your data. 
+The following options are also available in `explore_metannotate_data()` to customize the plot:
+
+Applies to both barplots and bubble plots:
+- `space`: whether or not the axes in different panels are `fixed` or `free` (see ggplot2 docs)
+
+Apply to bubble plots only:
+- `bubble_size_range`: numeric vector of length two (e.g., `c(1,20`) with the smallest and largest bubble sizes you want
+- `alpha`: transparency of bubbles; between 0 (transparent) to 1 (opaque)
+- `bubble_labels`: logical (TRUE/FALSE); show percent labels on the bubbles?
+
+Plus, two additional advanced settings exist:
+- `plot_normalizing_HMM`: logical (TRUE/FALSE); set to FALSE to remove the normalizing_HMM from the final plot
+- `dump_raw_data`: logical (TRUE/FALSE); if TRUE, return the normalized and subsetted data table in lieu of a plot
+
+Beyond these, you can also tweak colours as specified below.
+
 ### 4. Beatify and export the plot
 Once you have settings for `explore_metannotate_data` that you are satisfied with, you can change the plot colours to 
 be more meaningful.
@@ -290,9 +336,52 @@ sample (AFTER length normalized) and then divides other length-normalized HMM hi
 them as proportional abundances relative to the marker gene.
 
 This lays the framework for understanding the bar charts. For each plotted HMM:
-* Total hits relative to the taxonomic marker are shown as a grey bar ("#808080"). This gives an indication of the **total abundance of that gene within the microbial community relative to the marker**. For example, if the grey bar is at 30% for the _nifH_ gene, then potentially, ~30% of microorganisms within the community possess that gene (or 15% possess two copies of that gene, and so on).
+* Total hits relative to the taxonomic marker are shown as a grey bar ("#808080"). This gives an indication of the 
+**total abundance of that gene within the microbial community relative to the marker**. For example, if the grey bar is 
+at 30% for the _nifH_ gene, then potentially, ~30% of microorganisms within the community possess that gene (or 15% 
+possess two copies of that gene, and so on).
 * The top specified taxa are shown as coloured bars (as specified by the user)
 
-## Future development plans
-- Allow for a more carefully fine-scale user workflow for advanced users. For example, make a way to export intermediate tables or the final data table, not just the plot.
+## Appendix: advanced usage
+You can use individual functions in the package in place of `explore_metannotate_data()` for finer control
 
+In short:
+```R
+metannotate_table_filename <- "path_to_your_all_annotation_tsv_file"
+hmm_naming_info_filename <- "path_where_you_want_to_write_the_hmm_naming_file.tsv"
+dataset_naming_info_filename <- "path_where_you_want_to_write_the_dataset_naming_file.tsv"
+
+# Load your data
+metannotate_data <- read_metannotate_data(metannotate_table_filename)
+
+# Print the HMM/data setup template files; then fill them in manually
+setup_templates <- create_setup_templates(metannotate_data, write_tables = TRUE,
+                                          hmm_info_filename = hmm_naming_info_filename,
+                                          dataset_info_filename = dataset_naming_info_filename)
+
+# Map on the template info
+metannotate_data_mapped <- map_naming_information(metannotate_data, hmm_naming_info_filename, dataset_naming_info_filename)
+
+### Now things start to look different
+
+# Pre-process the data (three functions here)
+metannotate_data_processed_list <- filter_by_evalue(metannotate_data_mapped, evalue = 1e-10)[[1]] %>%
+  collapse_metannotate_table_by_taxon(taxon = "Family") %>%
+  normalize_collapsed_metannotate_data(normalizing_HMM = "rpoB")
+
+# Plot the data
+metannotate_plot <- metannotate_plotter(metannotate_data_processed_list , colouring_template_filename = NA,
+                                        top_x = NA, percent_mode = "within_sample", normalizing_HMM = "auto",
+                                        plot_normalizing_HMM = TRUE, dump_raw_data = FALSE, plot_type = "bar",
+                                        space = "free", bubble_size_range = c(1,20), alpha = 0.8, bubble_labels = TRUE)
+# Further beautify the plot with a colouring_template_filename if interested.
+
+# You can find out more on each of these functions using the ? notation (e.g., ?metannoviz::filter_by_evalue() )
+```
+The main purpose of splitting up the functions as shown here is if you want to do custom analyses with your data 
+outside of the regular workflow. More documentation coming here as the script is further developed.
+
+## Future development plans
+- Allow for a more carefully fine-scale user workflow for advanced users. For example, document how to export 
+intermediate tables or the final data table, not just the plot.
+- Be able to handle replicates

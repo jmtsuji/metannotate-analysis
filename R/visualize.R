@@ -140,8 +140,8 @@ metannotate_ggplot <- function(metannotate_data_normalized, hit_totals, plotting
 #' show some of the taxa that were hit. This would be a good time to use 'within_HMM'.
 #' @param normalizing_HMM Name of the normalizing HMM (e.g., 'rpoB')]; specify 'auto' to attempt auto-detection
 #' @param plot_normalizing_HMM Retain the normalizing_HMM in the final ggplot?
-#' @param ... Other fine-tuned plotting options controlled by \code{\link{metannotate_ggplot}}
 #' @param dump_raw_data Return the normalized and subsetted table in lieu of a ggplot
+#' @param ... Other fine-tuned plotting options controlled by \code{\link{metannotate_ggplot}}
 #' @return A ggplot of MetAnnotate data (or raw data; see above)
 #' @export
 metannotate_plotter <- function(metannotate_data_normalized_list, colouring_template_filename = NA,
