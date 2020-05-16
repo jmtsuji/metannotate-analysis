@@ -6,7 +6,6 @@
 library(argparser)
 library(parallel)
 library(futile.logger)
-library(roxygen2)
 library(tools)
 library(tibble)
 library(tidyselect)
