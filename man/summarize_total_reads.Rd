@@ -20,3 +20,4 @@ Tibble of summarized hit counts
 \description{
 Counts all HMM hits for the gene of interest
 }
+\keyword{internal}

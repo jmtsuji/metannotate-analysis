@@ -2,6 +2,7 @@
 % Please edit documentation in R/filter.R
 \name{filter_by_evalue}
 \alias{filter_by_evalue}
+\alias{filter}
 \title{Filter metannotate data by e-value}
 \usage{
 filter_by_evalue(metannotate_data, evalue = 1e-10)

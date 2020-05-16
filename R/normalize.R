@@ -4,6 +4,7 @@
 
 #' Normalize metannotate data
 #'
+#' @aliases normalize
 #' @description Double-normlizes metannotate data by HMM length and a single-copy gene marker
 #' @param metannotate_data_collapsed Tibble of taxonomy-collapsed metannotate data - see collapse_metannotate_table_by_taxon()
 #' @param normalizing_HMM Character vector (length 1) giving the plotting name of an HMM.Family in your table
@@ -50,6 +51,7 @@ normalize_collapsed_metannotate_data <- function(metannotate_data_collapsed, nor
 
 #' Subset high-abundance taxa from metannotate data
 #'
+#' @aliases subset
 #' @description Subsets normalized metannotate data to some desired threshold of most abundance organisms
 #' @param metannotate_data_normalized Tibble of normalized metannotate data - see normalize_collapsed_metannotate_data()
 #' @param top_x Numeric vector (length 1) giving the subsetting amount you desire.

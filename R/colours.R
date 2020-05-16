@@ -35,6 +35,7 @@ choose_discrete_colour_scale <- function(number_of_entries) {
 #' 
 #' @param metannotate_data_normalized Tibble of normalized metannotate data - see normalize_collapsed_metannotate_data()
 #' @return a tibble of unique taxa with HTML colour codes in the 'colour' column
+#' @keywords internal
 generate_plotting_colours <- function(metannotate_data_normalized) {
   
   plotting_colour_data <- dplyr::ungroup(metannotate_data_normalized) %>%

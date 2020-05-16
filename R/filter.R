@@ -9,6 +9,7 @@
 #' @param collapsed Logical (length 1) - has the table already been collapsed to a taxonomy rank?
 #' If TRUE, then the function will sum the "hits" column instead of a simple count.
 #' @return Tibble of summarized hit counts
+#' @keywords internal
 summarize_total_reads <- function(metannotate_data, gene = "rpoB", collapsed = FALSE) {
   # Filter down to gene of interest
   metannotate_summ <- dplyr::filter(metannotate_data, HMM.Family %in% gene)
@@ -39,6 +40,7 @@ summarize_total_reads <- function(metannotate_data, gene = "rpoB", collapsed = F
 #' @param collapsed Logical (length 1) - has the table already been collapsed to a taxonomy rank?
 #' If TRUE, then the function will sum the "hits" column instead of a simple count.
 #' @return Tibble of summarized hit counts, wide format
+#' @keywords internal
 summarize_total_reads_all_genes <- function(metannotate_data, format = "wide", collapsed = FALSE) {
   
   # Generate summary for all genes
@@ -78,6 +80,7 @@ summarize_total_reads_all_genes <- function(metannotate_data, format = "wide", c
 
 #' Filter metannotate data by e-value
 #'
+#' @aliases filter
 #' @description Filters the hits to the desired e-value cutoff and reports stats
 #' @param metannotate_data Tibble of metannotate data
 #' @param evalue Numeric vector of the evalue cutoff

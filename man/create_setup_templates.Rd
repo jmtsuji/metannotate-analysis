@@ -26,3 +26,4 @@ List of two tibbles: hmm_info and dataset_info; user can fill these out
 \description{
 Creates templates for user-specified HMM.Family and Dataset naming data
 }
+\keyword{internal}

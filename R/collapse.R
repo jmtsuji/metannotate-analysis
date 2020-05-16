@@ -3,7 +3,8 @@
 # Copyright Jackson M. Tsuji, 2020 (Neufeld Lab)
 
 #' Collapses metannotate table to the given taxonomic rank
-#' 
+#'
+#' @aliases collapse
 #' @param metannotate_data Tibble of metannotate data
 #' @param taxon Character vector (length 1) giving the taxon name to collapse to
 #' Can be: domain, phylum, class, order, family, genus, species (case insensitive)

@@ -2,6 +2,7 @@
 % Please edit documentation in R/normalize.R
 \name{normalize_collapsed_metannotate_data}
 \alias{normalize_collapsed_metannotate_data}
+\alias{normalize}
 \title{Normalize metannotate data}
 \usage{
 normalize_collapsed_metannotate_data(

@@ -2,6 +2,7 @@
 % Please edit documentation in R/visualize.R
 \name{metannotate_plotter}
 \alias{metannotate_plotter}
+\alias{plot}
 \title{Wrapper for convenient generation of MetAnnotate ggplot data}
 \usage{
 metannotate_plotter(

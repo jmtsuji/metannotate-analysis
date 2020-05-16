@@ -2,6 +2,7 @@
 % Please edit documentation in R/collapse.R
 \name{collapse_metannotate_table_by_taxon}
 \alias{collapse_metannotate_table_by_taxon}
+\alias{collapse}
 \title{Collapses metannotate table to the given taxonomic rank}
 \usage{
 collapse_metannotate_table_by_taxon(metannotate_data, taxon = "Family")

@@ -2,6 +2,9 @@
 % Please edit documentation in R/load.R
 \name{read_metannotate_data}
 \alias{read_metannotate_data}
+\alias{load_metannotate_data}
+\alias{load}
+\alias{read}
 \title{Loads MetAnnotate data table}
 \usage{
 read_metannotate_data(metannotate_table_filename)

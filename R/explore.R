@@ -4,6 +4,7 @@
 
 #' Explore MetAnnotate data
 #'
+#' @aliases explore metannotate
 #' @description high-level exploration function for examining MetAnnotate data
 #' @param metannotate_data_mapped The tibble output by map_naming_information()
 #' @param evalue E-value cutoff for HMM hits

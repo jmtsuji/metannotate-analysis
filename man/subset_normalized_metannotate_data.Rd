@@ -2,6 +2,7 @@
 % Please edit documentation in R/normalize.R
 \name{subset_normalized_metannotate_data}
 \alias{subset_normalized_metannotate_data}
+\alias{subset}
 \title{Subset high-abundance taxa from metannotate data}
 \usage{
 subset_normalized_metannotate_data(

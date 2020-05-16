@@ -25,3 +25,4 @@ Tibble of summarized hit counts, wide format
 \description{
 Counts all HMM hits for all genes in the metannotate dataset
 }
+\keyword{internal}

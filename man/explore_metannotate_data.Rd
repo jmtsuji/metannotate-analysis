@@ -2,6 +2,8 @@
 % Please edit documentation in R/explore.R
 \name{explore_metannotate_data}
 \alias{explore_metannotate_data}
+\alias{explore}
+\alias{metannotate}
 \title{Explore MetAnnotate data}
 \usage{
 explore_metannotate_data(

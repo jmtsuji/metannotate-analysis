@@ -15,3 +15,4 @@ a tibble of unique taxa with HTML colour codes in the 'colour' column
 \description{
 Generates colour for a metannotate barplot
 }
+\keyword{internal}

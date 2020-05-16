@@ -124,6 +124,7 @@ metannotate_ggplot <- function(metannotate_data_normalized, hit_totals, plotting
 
 #' Wrapper for convenient generation of MetAnnotate ggplot data
 #'
+#' @aliases plot
 #' @description Wrapper to generate a ggplot of MetAnnotate data with subset, colours, labels, and so on
 #' @param metannotate_data_normalized_list List output of normalize_collapsed_metannotate_data()
 #' @param colouring_template_filename Filename of the colouring template you want to load
