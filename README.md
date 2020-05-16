@@ -9,6 +9,7 @@ Library of functions to generate bar charts or bubble charts of major taxa in a 
 ```
 library(argparser)
 library(futile.logger)
+library(glue)
 library(tibble)
 library(tidyselect)
 library(plyr)
