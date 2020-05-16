@@ -8,9 +8,7 @@ Library of functions to generate bar charts or bubble charts of major taxa in a 
 ### Dependencies (R packages)
 ```
 library(argparser)
-library(parallel)
 library(futile.logger)
-library(tools)
 library(tibble)
 library(tidyselect)
 library(plyr)

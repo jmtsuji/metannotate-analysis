@@ -4,7 +4,6 @@
 
 ##### Load libraries ######
 library(argparser)
-library(parallel)
 library(futile.logger)
 library(tools)
 library(tibble)
