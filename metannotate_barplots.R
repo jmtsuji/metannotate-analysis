@@ -3,7 +3,6 @@
 # Copyright Jackson M. Tsuji, 2020 (Neufeld Lab)
 
 ##### Load libraries ######
-library(argparser)
 library(futile.logger)
 library(tools)
 library(tibble)
@@ -728,61 +727,3 @@ explore_metannotate_data <- function(metannotate_data_mapped, evalue = 1e-10, ta
 
   return(metannotate_plot)
 }
-
-main <- function(params) {
-  
-  # Read data
-  flog.info("Loading metannotate table (can take time)...")
-  metannotate_data <- read_metannotate_data(params$metannotate_table_filename)
-  
-  # Print raw HMM and sample names in template if desired
-  if (params$setup == TRUE) {
-    setup_templates <- create_setup_templates(metannotate_data, write_tables = TRUE)
-    flog.info(paste0("Wrote setup templates to 'hmm_info_template.tsv' and 'dataset_info_template.tsv. ",
-                         "Please fill these out and then use them as script inputs."))
-    quit(save = "no", status = 0)
-  }
-  
-  # Apply user-provided setup templates if desired (required because of HMM length info)
-  # TODO - make it possible to somehow run this in 'auto' mode to avoid the iterative usage for quick use.
-  if (is.na(params$hmm_naming_info) == FALSE && is.na(params$dataset_naming_info) == FALSE) {
-    flog.info("Loading user-provided HMM and dataset naming information")
-    metannotate_data <- map_naming_information(metannotate_data, params$hmm_naming_info, params$dataset_naming_info)
-  } else {
-    flog.error("Must provde hmm_naming_info and dataset_naming_info.")
-    quit(save = "no", status = 1)
-  }
-  
-  metannotate_plot <- explore_metannotate_data(metannotate_data, evalue = params$evalue, taxon = params$taxon,
-                         normalizing_HMM = params$normalizing_HMM, plot_type = params$plot_type, 
-                         top_x = params$top_x, colouring_template_filename = params$colouring_template_filename,
-                         percent_mode = params$percent_mode)
-  print(metannotate_plot)
-  ggsave(file = params$output_filename, width = params$plot_dimensions_mm[1], 
-         height = params$plot_dimensions_mm[2], units = "mm")
-  
-}
-
-if (interactive() == FALSE) {
-  # TODO - Use a parser. Examples are left here for now.
-  
-  params <- list()
-  setwd("/home/jmtsuji/Downloads/met_raw_reads_data_ELA111314/")
-  params$metannotate_table_filename <- "all_annotations_O24C2t28808773.tsv.gz"
-  params$setup <- FALSE
-  params$hmm_naming_info <- "hmm_info_filled_vs2.tsv"
-  params$dataset_naming_info <- "dataset_info_filled_vs1.tsv"
-  params$evalue <- 1e-10
-  params$taxon <- "Genus"
-  params$normalizing_HMM <- "rpoB"
-  params$top_x <- 0.01
-  params$colouring_template_filename <- NA
-  params$plot_type <- "bubble"
-  params$percent_mode <- "within_HMM"
-  params$output_filename <- "test_vs2.pdf"
-  params$plot_dimensions_mm <- c(200,200)
-  
-  main(params)
-  
-} 
-

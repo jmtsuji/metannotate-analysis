@@ -237,7 +237,6 @@ This lays the framework for understanding the bar charts. For each plotted HMM:
 * The top specified taxa are shown as coloured bars (as specified by the user)
 
 ### Future development plans
-- Make runnable via command line
 - Allow for a more carefully fine-scale user workflow for advanced users. For example, make a way to export intermediate tables or the final data table, not just the plot.
 - Turn this into a proper R package?
 
