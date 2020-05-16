@@ -45,8 +45,9 @@ its log file during the MetAnnotate run.
 From here, you can then analyze your data a number of different ways. The recommended workflow is below:
 
 ### Short and sweet instructions
-A very brief summary of everything below:
+Before diving into the details, here's a brief example for experienced users on how to visualize your MetAnnotate data:
 ```R
+# User variables
 metannotate_table_filename <- "path_to_your_all_annotation_tsv_file"
 hmm_naming_info_filename <- "path_where_you_want_to_write_the_hmm_naming_file.tsv"
 dataset_naming_info_filename <- "path_where_you_want_to_write_the_dataset_naming_file.tsv"
@@ -343,11 +344,12 @@ possess two copies of that gene, and so on).
 * The top specified taxa are shown as coloured bars (as specified by the user)
 
 ## Appendix: advanced usage
-You can use individual functions in the package in place of `explore_metannotate_data()` for finer control
+You can use individual functions in the package in place of `explore_metannotate_data()` for finer control.
 
-In short:
+Rapid example:
 ```R
-metannotate_table_filename <- "path_to_your_all_annotation_tsv_file"
+# User variables
+metannotate_table_filename <- "path_to_your_all_annotation_tsv_file.tsv"
 hmm_naming_info_filename <- "path_where_you_want_to_write_the_hmm_naming_file.tsv"
 dataset_naming_info_filename <- "path_where_you_want_to_write_the_dataset_naming_file.tsv"
 
@@ -382,6 +384,6 @@ The main purpose of splitting up the functions as shown here is if you want to d
 outside of the regular workflow. More documentation coming here as the script is further developed.
 
 ## Future development plans
-- Allow for a more carefully fine-scale user workflow for advanced users. For example, document how to export 
-intermediate tables or the final data table, not just the plot.
+- Enhanced advanced workflow (e.g., better subdivision of steps for doing multiple different types of analyses)
+- Example plots and data
 - Be able to handle replicates
