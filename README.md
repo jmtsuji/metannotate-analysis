@@ -4,14 +4,16 @@ Home of __metannoviz__, a simple R package to process output from [MetAnnotate](
 In short, __metannoviz__ generates bar charts or bubble plots of major taxa in a sample based on taxonomic or functional genes.
 
 ## Installation
-You can be up and running with a single command in your R console:
+You can be up and running with three commands in your R console:
 ```R
-# Note: 'ref="package"' can be removed once this is merged into master
+library(devtools)
 devtools::install_github("https://github.com/jmtsuji/metannotate-analysis", ref="package")
+library(metannoviz)
 ```
+(Note to self: 'ref="package"' can be removed once this is merged into master.)
 
 ### Dependencies
-You'll need R >= 3.2 installed on your machine, along with the `devtools` package.  
+You'll need R >= 3.2 installed on your machine, along with the `devtools` package (as seen above).  
 
 The following additional R packages will be installed during `devtools::install_github()` above:
 ```
