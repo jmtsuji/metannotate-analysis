@@ -33,7 +33,17 @@ read_metannotate_data <- function(metannotate_table_filename) {
   metannotate_data <- read.table(metannotate_table_filename, sep = "\t", header = TRUE, 
                                 comment.char = "", stringsAsFactors = FALSE) %>%
     tibble::as_tibble()
-  
+
+  # Check for the key required cols
+  key_columns <- c("Dataset", "HMM.Family", "ORF", "HMM.E.val", "Closest.Homolog.Species", "Closest.Homolog.Genus",
+                   "Closest.Homolog.Family", "Closest.Homolog.Order", "Closest.Homolog.Class",
+                   "Closest.Homolog.Phylum", "Closest.Homolog.Superkingdom")
+  if (all(key_columns %in% colnames(metannotate_data)) == FALSE) {
+    missing_cols <- glue::glue_collapse(key_columns[!key_columns %in% colnames(metannotate_data)], sep = ", ")
+    stop("The provided metannotate data table is missing key columns: '", missing_cols,
+         "'. Please check carefully. It's possible that they are mis-named.")
+  }
+
   return(metannotate_data)
 }
 
@@ -89,15 +99,31 @@ create_setup_templates <- function(metannotate_data, write_tables = FALSE,
 map_naming_information <- function(metannotate_data, hmm_naming_info_filename,
                                    dataset_naming_info_filename) {
   
-  # Read the data
+  # Read the HMM info
   hmm_info <- read.table(hmm_naming_info_filename, sep = "\t", header = TRUE,
                          stringsAsFactors = FALSE, comment.char = "") %>%
     tibble::as_tibble()
 
+  key_columns <- c("HMM.Family", "raw_name", "HMM_length")
+  if (all(key_columns %in% colnames(hmm_info)) == FALSE) {
+    missing_cols <- glue::glue_collapse(key_columns[!key_columns %in% colnames(hmm_info)], sep = ", ")
+    stop("The provided HMM naming file is missing key columns: '", missing_cols,
+         "'. Please check carefully. It's possible that they are mis-named.")
+  }
+
+  # Read the dataset info
   dataset_info <- read.table(dataset_naming_info_filename, sep = "\t", header = TRUE, 
                              stringsAsFactors = FALSE, comment.char = "") %>%
     tibble::as_tibble()
-  
+
+  key_columns <- c("raw_name", "Dataset")
+  if (all(key_columns %in% colnames(dataset_info)) == FALSE) {
+    missing_cols <- glue::glue_collapse(key_columns[!key_columns %in% colnames(dataset_info)], sep = ", ")
+    stop("The provided dataset naming file is missing key columns: '", missing_cols,
+         "'. Please check carefully. It's possible that they are mis-named.")
+
+  }
+
   # Remove elements of the metannotate table not in the naming info tables
   metannotate_data <- dplyr::filter(metannotate_data, (HMM.Family %in% hmm_info$raw_name) &
                                       (Dataset %in% dataset_info$raw_name))
@@ -289,7 +315,6 @@ normalize_collapsed_metannotate_data <- function(metannotate_data_collapsed, nor
   total_hits_join <- dplyr::select(total_hits, Dataset, all_of(normalizing_HMM)) %>%
     dplyr::rename(normalizing_HMM_total_hits = normalizing_HMM)
   metannotate_data_collapsed <- dplyr::left_join(metannotate_data_collapsed, total_hits_join, by = "Dataset")
-  total_hits_join <- NULL
   
   # Normalize metannotate table
   metannotate_data_collapsed$hits <- metannotate_data_collapsed$hits / 
@@ -408,10 +433,14 @@ generate_plotting_colours <- function(metannotate_data_normalized) {
     unique() %>%
     dplyr::arrange_all() # Sort by domain, phylum, and so on (in that order)
 
-  # Pull the lowest taxon rank
-  # TODO - confirm somehow that the lowest taxon rank is actually the last column as this assumes.
-  unique_taxa <- dplyr::pull(plotting_colour_data, ncol(plotting_colour_data))
-  
+  # Pull the lowest taxon rank by detecting the taxonomy that the data has been collapsed to
+  plotting_taxon_colname <- TAXONOMY_NAMING$metannotate_colnames[
+    TAXONOMY_NAMING$metannotate_colnames %in% colnames(plotting_colour_data)] %>%
+    tail(n = 1)
+  flog.debug(paste0("Plotting column auto-detected as '", plotting_taxon_colname, "'."))
+
+  unique_taxa <- dplyr::pull(plotting_colour_data, plotting_taxon_colname)
+
   flog.info(paste0("Generating automatic colour scheme for ", length(unique_taxa), " unique taxa"))
   
   plotting_colour_data$colour <- choose_discrete_colour_scale(length(unique_taxa))
@@ -428,14 +457,14 @@ generate_plotting_colours <- function(metannotate_data_normalized) {
 #' If 'NA' is entered, then the function will auto-generate colours and continue on
 #' @return a tibble of unique taxa with HTML colour codes in the 'colour' column
 process_plotting_colours <- function(metannotate_data_normalized, colouring_template_filename = NA) {
-  
+
+  plotting_colour_data <- generate_plotting_colours(metannotate_data_normalized)
+
   if (is.na(colouring_template_filename) == TRUE) {
     
-    plotting_colour_data <- generate_plotting_colours(metannotate_data_normalized)
+    flog.debug("Generated plotting colour template without writing to file")
     
   } else if (file.exists(colouring_template_filename) == FALSE) {
-    
-    plotting_colour_data <- generate_plotting_colours(metannotate_data_normalized)
     
     flog.info(paste0("Saving plot colour template to '", colouring_template_filename, "'"))
     write.table(plotting_colour_data, colouring_template_filename, sep = "\t", row.names = FALSE,
@@ -444,11 +473,28 @@ process_plotting_colours <- function(metannotate_data_normalized, colouring_temp
   } else if (file.exists(colouring_template_filename) == TRUE) {
     flog.info(paste0("Loading plot colour template from '", colouring_template_filename, "'"))
 
-    # TODO - run code to check that the input table's format is as expected
-    plotting_colour_data <- read.table(colouring_template_filename, sep = "\t", header = TRUE,
+    user_plotting_colour_data <- read.table(colouring_template_filename, sep = "\t", header = TRUE,
                                    comment.char = "", stringsAsFactors = FALSE) %>%
       tibble::as_tibble()
-    
+
+    # Check it matches the auto-generated table
+    template_colnum <- length(colnames(plotting_colour_data))
+    main_colnames <- colnames(user_plotting_colour_data)[1:template_colnum]
+
+    if (identical(main_colnames, colnames(plotting_colour_data)) == FALSE) {
+      stop("Your custom plotting colour table does not have the same first columns as the template. ",
+           "Please check carefully.")
+    }
+
+    # TODO - this might be a bit aggressive. I could just check the column that will be plotted, for example.
+    if (identical(dplyr::arrange_all(plotting_colour_data[,1:(template_colnum-1)]),
+                  dplyr::arrange_all(user_plotting_colour_data[,1:(template_colnum-1)])) == FALSE) {
+      stop("Your custom plotting colour table does not contain the exact same taxon entries as the template. ",
+           "Please check carefully")
+    }
+
+    plotting_colour_data <- user_plotting_colour_data
+
   }
   
   return(plotting_colour_data)
