@@ -1,16 +1,39 @@
 Package: metannoviz
-Title: What the Package Does (One Line, Title Case)
-Version: 0.0.0.9000
+Version: 1.0.0
+Title: Process and visualize output from the MetAnnotate pipeline
+Description:
+    This package facilitates downstream analysis after using
+    the MetAnnotate pipeline to scan unassembled metagenome reads from
+	environmental metagenome samples for functional genes of interest.
+	This package allows for quick exploration and visualization of the
+	relative abundances of functional genes compared to a reference taxonomic
+	marker gene.
 Authors@R: 
-    person(given = "First",
-           family = "Last",
+    person(given = "Jackson",
+           family = "Tsuji",
            role = c("aut", "cre"),
-           email = "first.last@example.com",
-           comment = c(ORCID = "YOUR-ORCID-ID"))
-Description: What the package does (one paragraph).
-License: `use_mit_license()`, `use_gpl3_license()` or friends to
-    pick a license
-Encoding: UTF-8
+           email = "jackson.tsuji@uwaterloo.ca",
+           comment = c(ORCID = "0000-0001-7244-4709"))
+Depends:
+    R (>= 3.2)
+Imports: futile.logger,
+    tools,
+    glue (>= 1.2),
+    tibble (>= 2.0),
+    tidyselect,
+    plyr (>= 1.7),
+    dplyr (>= 0.8),
+    tidyr,
+    scales,
+    ggplot2 (>= 3.0)
+License: BSD_3_clause + file LICENSE
+URL: https://github.com/jmtsuji/metannotate-analysis
+BugReports: https://github.com/jmtsuji/metannotate-analysis/issues
 LazyData: true
+VignetteBuilder: knitr
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.1.0
+Encoding: UTF-8
+Suggests: 
+    knitr,
+    rmarkdown
