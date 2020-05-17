@@ -1,4 +1,6 @@
 # metannotate-analysis
+**NOTE**: This repo is now deprecated. Instead, use [metannoviz](https://github.com/MetAnnotate/metannoviz), the R package version of this initial code.
+
 Collection of personal scripts to process output from [MetAnnotate (DoxeyLab tool)](https://bitbucket.org/doxeylab/metannotate)
 
 ## 1. metannotate_barplots.R
