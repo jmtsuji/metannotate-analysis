@@ -40,7 +40,7 @@ From here, you can then analyze your data a number of different ways. The recomm
 #### 1. Load the data
 ```
 metannotate_table_filename <- "path_to_your_all_annotation_tsv_file"
-metannotate_data <- read_metannotate_tibble(metannotate_table_filename)
+metannotate_data <- read_metannotate_data(metannotate_table_filename)
 ```
 
 #### 2. Print setup templates
