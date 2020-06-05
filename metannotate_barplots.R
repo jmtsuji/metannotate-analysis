@@ -32,7 +32,7 @@ read_metannotate_data <- function(metannotate_table_filename) {
   
   # Load the data
   metannotate_data <- read.table(metannotate_table_filename, sep = "\t", header = TRUE, 
-                                comment.char = "", stringsAsFactors = FALSE) %>%
+                                comment.char = "", quote = "", stringsAsFactors = FALSE) %>%
     tibble::as_tibble()
 
   # Check for the key required cols
